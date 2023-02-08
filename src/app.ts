@@ -1,13 +1,17 @@
-import express, {Request, Response, NextFunction} from "express"
+import express, { Request, Response, NextFunction } from "express";
 
-import { PORT } from "./lib/constant";
+const app = express();
 
-const app = express()
+const PORT = process.env.SERVER_PORT || 3367;
 
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-    res.send('welcome!');
-});
+const pg = require("./database/postgreSQL/connnection");
+
+pg.connect();
+
+import { router as indexRouter } from "./route/index";
+
+app.use("/", indexRouter);
 
 app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
