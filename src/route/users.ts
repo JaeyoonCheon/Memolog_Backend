@@ -24,6 +24,41 @@ router.get("/:userId", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/signin", async (req: Request, res: Response) => {
+  try {
+    const client = await pool.connect();
+
+    const { email, password } = req.body;
+
+    const encryptedPassword = password;
+
+    const { isAccountExist } = await client.query(
+      "SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS email_check",
+      [email]
+    );
+
+    if (isAccountExist === 0) {
+      throw new Error("Email or password is wrong!");
+    }
+
+    const { comparisonPW } = await client.query(
+      `SELECT password FROM public.user WHERE id=$1;`,
+      [email, encryptedPassword]
+    );
+
+    // bcrypt 등의 별도 대조 과정으로 리팩토링 필요
+    if (encryptedPassword !== comparisonPW) {
+      throw new Error("Email or password is wrong!");
+    }
+
+    client.release();
+    res.status(200).send("Data insert successfully.");
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  }
+});
+
 router.post("/signup", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
