@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 
 const express = require("express");
+const bcrypt = require("bcrypt");
 
 const pool = require("../database/postgreSQL/pool");
+const redisClient = require("../database/redis");
+const jwt = require("../lib/authToken/jwt");
 
 export const router = express.Router();
 
@@ -30,8 +33,6 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     const { email, password } = req.body;
 
-    const encryptedPassword = password;
-
     const { isAccountExist } = await client.query(
       "SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS email_check",
       [email]
@@ -41,18 +42,32 @@ router.post("/signin", async (req: Request, res: Response) => {
       throw new Error("Email or password is wrong!");
     }
 
+    const hashSalt = await bcrypt.genSalt(process.env.HASH_SALT_ROUND);
+    const encryptedPassword = await bcrypt.hash(password, hashSalt);
+
     const { comparisonPW } = await client.query(
-      `SELECT password FROM public.user WHERE id=$1;`,
+      `SELECT password FROM public.user WHERE email=$1;`,
       [email, encryptedPassword]
     );
 
-    // bcrypt 등의 별도 대조 과정으로 리팩토링 필요
-    if (encryptedPassword !== comparisonPW) {
+    if (await bcrypt.compare(encryptedPassword, comparisonPW === false)) {
       throw new Error("Email or password is wrong!");
     }
 
+    const { userId } = await client.query(
+      "SELECT id FROM public.user WHERE email=$1",
+      [email]
+    );
+
+    const accessToken = jwt.sign(userId);
+    const refreshToken = jwt.refresh();
+
+    redisClient.set(userId, refreshToken);
+
     client.release();
-    res.status(200).send("Data insert successfully.");
+    res.status(200).send({
+      token: { accessToken, refreshToken },
+    });
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
