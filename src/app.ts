@@ -9,8 +9,8 @@ app.use(bodyParser.json());
 const PORT = process.env.SERVER_PORT || 3367;
 
 import { router as indexRouter } from "./route/index";
-import { router as documentRouter } from "./route/document";
-import { router as userRouter } from "./route/user";
+import { router as documentRouter } from "./route/documents";
+import { router as userRouter } from "./route/users";
 
 app.use("/", indexRouter);
 app.use("/document", documentRouter);
