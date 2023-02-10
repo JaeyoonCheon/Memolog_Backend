@@ -4,23 +4,23 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 
 const pool = require("../database/postgreSQL/pool");
-const redisClient = require("../database/redis");
+const redisClient = require("../database/redis/client");
 const jwt = require("../lib/authToken/jwt");
 
 export const router = express.Router();
 
-router.get("/:userId", async (req: Request, res: Response) => {
+router.get("/profile", async (req: Request, res: Response) => {
   const { userId } = req.params;
 
   try {
     const client = await pool.connect();
     const { rows } = await client.query(
-      "select * from public.user where id=$1",
+      "SELECT * FROM public.user WHERE id=$1",
       [userId]
     );
 
     client.release();
-    res.send(rows);
+    res.send(JSON.stringify(rows[0]));
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
@@ -30,39 +30,42 @@ router.get("/:userId", async (req: Request, res: Response) => {
 router.post("/signin", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
+    await redisClient.connect();
+    await redisClient.ping();
 
     const { email, password } = req.body;
 
-    const { isAccountExist } = await client.query(
-      "SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS email_check",
+    const isExistRows = await client.query(
+      `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS isExist`,
       [email]
     );
+    const isExist = isExistRows.rows[0].isExist;
 
-    if (isAccountExist === 0) {
+    if (isExist === false) {
       throw new Error("Email or password is wrong!");
     }
 
-    const hashSalt = await bcrypt.genSalt(process.env.HASH_SALT_ROUND);
-    const encryptedPassword = await bcrypt.hash(password, hashSalt);
-
-    const { comparisonPW } = await client.query(
+    const savedPasswordRows = await client.query(
       `SELECT password FROM public.user WHERE email=$1;`,
-      [email, encryptedPassword]
+      [email]
     );
+    const savedPassword = savedPasswordRows.rows[0].password;
 
-    if (await bcrypt.compare(encryptedPassword, comparisonPW === false)) {
+    const compareResult = await bcrypt.compare(password, savedPassword);
+    if (!compareResult) {
       throw new Error("Email or password is wrong!");
     }
 
-    const { userId } = await client.query(
-      "SELECT id FROM public.user WHERE email=$1",
+    const userIdRows = await client.query(
+      `SELECT id FROM public.user WHERE email=$1`,
       [email]
     );
+    const userId = userIdRows.rows[0].id;
 
     const accessToken = jwt.sign(userId);
     const refreshToken = jwt.refresh();
 
-    redisClient.set(userId, refreshToken);
+    await redisClient.set(String(userId), refreshToken);
 
     client.release();
     res.status(200).send({
@@ -80,7 +83,11 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     const { name, email, profile_image, password } = req.body;
 
-    const encryptedPassword = password;
+    //유효성 검증
+
+    const hashSaltRound = Number(process.env.HASH_SALT_ROUND);
+    const hashSalt = await bcrypt.genSalt(hashSaltRound);
+    const encryptedPassword = await bcrypt.hash(password, hashSalt);
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const created_at = new Date(Date.now() - localeOffset);
@@ -90,6 +97,7 @@ router.post("/signup", async (req: Request, res: Response) => {
       `INSERT INTO public.user (name, email, profile_image, password, created_at, updated_at) values ($1, $2, $3, $4, $5, $6);`,
       [name, email, profile_image, encryptedPassword, created_at, updated_at]
     );
+
     client.release();
     res.status(200).send("Data insert successfully.");
   } catch (e) {
@@ -130,20 +138,22 @@ router.patch("/:userId/pw", async (req: Request, res: Response) => {
 
     const { password } = req.body;
 
-    const { oldPassword } = await client.query(
+    const { oldPasswordRows } = await client.query(
       "SELECT password FROM public.user WHERE id=$1",
       [userId]
     );
+    const oldPassword = oldPasswordRows.rows[0].password;
 
     if (password === oldPassword) {
       // 순서 주의
-      const { rows } = await client.query(
+      const profileRows = await client.query(
         "UPDATE public.user SET name=$2, profile_image=$3 where id=$1",
         [password]
       );
+      const profile = profileRows.rows[0];
 
       client.release();
-      res.send(rows);
+      res.send(profile);
     } else {
       throw new Error("New password is same to old one!");
     }

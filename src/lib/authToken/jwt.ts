@@ -4,13 +4,13 @@ const jwt = require("jsonwebtoken");
 const redisClient = require("../../database/redis/client");
 const SECRET = process.env.SALT;
 
-const signature = (userId: Number) => {
+const sign = (userId: Number) => {
   const payload = {
     id: userId,
   };
 
   return jwt.sign(payload, SECRET, {
-    algorithm: "RS256",
+    algorithm: "HS256",
     expiresIn: "1h",
   });
 };
@@ -33,7 +33,7 @@ const verify = (token: any) => {
 
 const refresh = () => {
   return jwt.sign({}, SECRET, {
-    algorithm: "RS256",
+    algorithm: "HS256",
     expiresIn: "7d",
   });
 };
@@ -60,7 +60,7 @@ const refreshVerify = async (token: any, userId: Number) => {
 };
 
 module.exports = {
-  signature,
+  sign,
   verify,
   refresh,
   refreshVerify,
