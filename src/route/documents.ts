@@ -7,11 +7,30 @@ export const router = express.Router();
 router.get("/", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
-    const documentsRows = await client.query("select * from public.document");
+    const documentsRows = await client.query("SELECT * FROM public.document");
     const documents = documentsRows.rows;
 
     client.release();
     res.send(documents);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  }
+});
+
+router.get("/:documentId", async (req: Request, res: Response) => {
+  const documentId = req.params.documentId;
+
+  try {
+    const client = await pool.connect();
+    const documentsRows = await client.query(
+      "SELECT * FROM public.document WHERE id=$1",
+      [documentId]
+    );
+    const document = documentsRows.rows[0];
+
+    client.release();
+    res.send(document);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
