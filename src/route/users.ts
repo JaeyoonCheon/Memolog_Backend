@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 
-const express = require("express");
-const bcrypt = require("bcrypt");
+import express from "express";
+import bcrypt from "bcrypt";
 
-const pool = require("../database/postgreSQL/pool");
-const redisClient = require("../database/redis/client");
-const jwt = require("../lib/authToken/jwt");
+import pool from "../database/postgreSQL/pool";
+import redisClient from "../database/redis/client";
+import { sign, refresh } from "../lib/authToken/jwt";
 
 export const router = express.Router();
 
@@ -62,8 +62,8 @@ router.post("/signin", async (req: Request, res: Response) => {
     );
     const userId = userIdRows.rows[0].id;
 
-    const accessToken = jwt.sign(userId);
-    const refreshToken = jwt.refresh();
+    const accessToken = sign(userId);
+    const refreshToken = refresh();
 
     await redisClient.set(String(userId), refreshToken);
 
@@ -138,7 +138,7 @@ router.patch("/:userId/pw", async (req: Request, res: Response) => {
 
     const { password } = req.body;
 
-    const { oldPasswordRows } = await client.query(
+    const oldPasswordRows = await client.query(
       "SELECT password FROM public.user WHERE id=$1",
       [userId]
     );

@@ -1,8 +1,8 @@
-const { promisify } = require("util");
-const jwt = require("jsonwebtoken");
+import { promisify } from "util";
+import * as jwt from "jsonwebtoken";
 
 const redisClient = require("../../database/redis/client");
-const SECRET = process.env.SALT;
+const SECRET: jwt.Secret = process.env.SALT || "";
 
 const sign = (userId: Number) => {
   const payload = {
@@ -15,19 +15,12 @@ const sign = (userId: Number) => {
   });
 };
 
-const verify = (token: any) => {
-  let decodedToken = null;
+const verify = (token: string) => {
   try {
-    decodedToken = jwt.verify(token, SECRET);
-    return {
-      ok: true,
-      id: decodedToken.id,
-    };
-  } catch (e: any) {
-    return {
-      ok: false,
-      message: e.message,
-    };
+    const decodedToken = jwt.verify(token, SECRET);
+    return decodedToken;
+  } catch (e) {
+    return e;
   }
 };
 
@@ -38,7 +31,7 @@ const refresh = () => {
   });
 };
 
-const refreshVerify = async (token: any, userId: Number) => {
+const refreshVerify = async (token: string, userId: Number) => {
   const getRedisAsync = promisify(redisClient.get).bind(redisClient);
 
   try {
@@ -59,9 +52,4 @@ const refreshVerify = async (token: any, userId: Number) => {
   }
 };
 
-module.exports = {
-  sign,
-  verify,
-  refresh,
-  refreshVerify,
-};
+export { sign, verify, refresh, refreshVerify };

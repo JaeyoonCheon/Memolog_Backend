@@ -1,6 +1,6 @@
-const { Pool } = require("pg");
-const DBConfig = require("./config");
+import { Pool } from "pg";
+import config from "./config";
 
-const pool = new Pool(DBConfig);
+const pool = new Pool(config);
 
-module.exports = pool;
+export default pool;

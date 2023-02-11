@@ -1,5 +1,5 @@
-const redis = require("redis");
+import { createClient } from "redis";
 
-const client = redis.createClient();
+const client = createClient();
 
-module.exports = client;
+export default client;
