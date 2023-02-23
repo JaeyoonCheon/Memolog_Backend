@@ -10,6 +10,9 @@ router.get("/", async (req: Request, res: Response) => {
     const documentsRows = await client.query("SELECT * FROM public.document");
     const documents = documentsRows.rows;
 
+    console.log(documents);
+    console.log("document query");
+
     client.release();
     res.send(documents);
   } catch (e) {

@@ -30,8 +30,6 @@ router.get("/profile", async (req: Request, res: Response) => {
 router.post("/signin", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
-    await redisClient.connect();
-    await redisClient.ping();
 
     const { email, password } = req.body;
 
@@ -50,7 +48,6 @@ router.post("/signin", async (req: Request, res: Response) => {
       [email]
     );
     const savedPassword = savedPasswordRows.rows[0].password;
-
     const compareResult = await bcrypt.compare(password, savedPassword);
     if (!compareResult) {
       throw new Error("Email or password is wrong!");
@@ -81,7 +78,7 @@ router.post("/signup", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { name, email, profile_image, password } = req.body;
+    const { name, email, profile_image = "", password } = req.body;
 
     //유효성 검증
 
