@@ -44,11 +44,16 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { title, form, created_at, updated_at, user_id } = req.body;
+    console.log(req.body);
+    const { title, form, userId } = req.body;
+
+    const localeOffset = new Date().getTimezoneOffset() * 60000;
+    const created_at = new Date(Date.now() - localeOffset);
+    const updated_at = created_at;
 
     await client.query(
       `INSERT INTO public.document (title, form, created_at, updated_at, user_id) VALUES ($1, $2, $3, $4, $5)`,
-      [title, form, created_at, updated_at, user_id]
+      [title, form, created_at, updated_at, userId]
     );
     client.release();
     res.status(200).send("Data insert successfully.");
