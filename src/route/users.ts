@@ -53,11 +53,16 @@ router.post("/signin", async (req: Request, res: Response) => {
       throw new Error("Email or password is wrong!");
     }
 
-    const userIdRows = await client.query(
-      `SELECT id FROM public.user WHERE email=$1`,
+    const userRows = await client.query(
+      `SELECT * FROM public.user WHERE email=$1`,
       [email]
     );
-    const userId = userIdRows.rows[0].id;
+    const {
+      id: userId,
+      name,
+      email: userEmail,
+      profile_image,
+    } = userRows.rows[0];
 
     const accessToken = sign(userId);
     const refreshToken = refresh();
@@ -67,6 +72,12 @@ router.post("/signin", async (req: Request, res: Response) => {
     client.release();
     res.status(200).send({
       token: { accessToken, refreshToken },
+      user: {
+        userId,
+        name,
+        userEmail,
+        profile_image,
+      },
     });
   } catch (e) {
     console.log(e);
