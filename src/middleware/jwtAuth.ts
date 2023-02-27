@@ -6,7 +6,7 @@ import { verify } from "../lib/authToken/jwt";
 dotenv.config();
 
 export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
-  const JWT_SALT = process.env.JWT_TOKEN;
+  const JWT_SALT = process.env.SALT;
   const accessToken = req.headers.authorization?.split("Bearer ")[1];
 
   try {
