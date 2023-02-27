@@ -1,18 +1,26 @@
 import { promisify } from "util";
 import * as jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
-const redisClient = require("../../database/redis/client");
+import client from "../../database/redis/client";
+
 const SECRET: jwt.Secret = process.env.SALT || "";
 
 const sign = (userId: Number) => {
+  const expireTime = new Date();
+  expireTime.setHours(expireTime.getHours() + 1);
+
   const payload = {
     id: userId,
   };
 
-  return jwt.sign(payload, SECRET, {
-    algorithm: "HS256",
-    expiresIn: "1h",
-  });
+  return {
+    token: jwt.sign(payload, SECRET, {
+      algorithm: "HS256",
+      expiresIn: process.env.ACCESS_EXPIRE,
+    }),
+    expireTime: expireTime,
+  };
 };
 
 const verify = (token: string) => {
@@ -27,15 +35,15 @@ const verify = (token: string) => {
 const refresh = () => {
   return jwt.sign({}, SECRET, {
     algorithm: "HS256",
-    expiresIn: "7d",
+    expiresIn: process.env.REFRESH_EXPIRE,
   });
 };
 
 const refreshVerify = async (token: string, userId: Number) => {
-  const getRedisAsync = promisify(redisClient.get).bind(redisClient);
-
   try {
-    const refreshData = await getRedisAsync(userId);
+    console.log("get Refresh Token!");
+    const refreshData = await client.get(String(userId));
+    console.log("success!");
 
     if (token === refreshData) {
       try {
@@ -48,6 +56,7 @@ const refreshVerify = async (token: string, userId: Number) => {
       return false;
     }
   } catch (err) {
+    console.log(err);
     return false;
   }
 };

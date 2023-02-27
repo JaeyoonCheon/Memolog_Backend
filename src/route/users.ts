@@ -5,25 +5,39 @@ import bcrypt from "bcrypt";
 
 import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
-import { sign, refresh } from "../lib/authToken/jwt";
+import { sign, refresh, refreshVerify } from "../lib/authToken/jwt";
 
 export const router = express.Router();
 
-router.get("/profile", async (req: Request, res: Response) => {
-  const { userId } = req.params;
+router.post("/token", async (req: Request, res: Response) => {
+  const JWT_SALT = process.env.SALT;
+  const refreshToken = req.headers.authorization?.split("Bearer ")[1];
+  const { userId } = req.body;
+
+  console.log(refreshToken);
+  console.log(userId);
 
   try {
-    const client = await pool.connect();
-    const { rows } = await client.query(
-      "SELECT * FROM public.user WHERE id=$1",
-      [userId]
-    );
+    if (refreshToken !== undefined && JWT_SALT !== undefined) {
+      console.log("start refresh");
+      const result = await refreshVerify(refreshToken, Number(userId));
+      console.log(result);
+      if (result === true) {
+        const { token: accessToken, expireTime } = sign(Number(userId));
 
-    client.release();
-    res.send(JSON.stringify(rows[0]));
+        res.status(200).send({
+          token: {
+            accessToken,
+            expireTime,
+          },
+        });
+      }
+    } else {
+      throw new Error("Refresh token is expired!");
+    }
   } catch (e) {
     console.log(e);
-    res.status(500).send("Error occured!");
+    res.status(401).send("Token Expired!");
   }
 });
 
@@ -64,14 +78,14 @@ router.post("/signin", async (req: Request, res: Response) => {
       profile_image,
     } = userRows.rows[0];
 
-    const accessToken = sign(userId);
+    const { token: accessToken, expireTime } = sign(userId);
     const refreshToken = refresh();
 
     await redisClient.set(String(userId), refreshToken);
 
     client.release();
     res.status(200).send({
-      token: { accessToken, refreshToken },
+      token: { accessToken, refreshToken, expireTime },
       user: {
         userId,
         name,
@@ -108,6 +122,24 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     client.release();
     res.status(200).send("Data insert successfully.");
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  }
+});
+
+router.get("/profile", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    const client = await pool.connect();
+    const { rows } = await client.query(
+      "SELECT * FROM public.user WHERE id=$1",
+      [userId]
+    );
+
+    client.release();
+    res.send(JSON.stringify(rows[0]));
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");

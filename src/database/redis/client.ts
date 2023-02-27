@@ -1,7 +1,13 @@
 import { createClient } from "redis";
 
 const client = createClient();
-client.connect().then();
-client.ping().then();
+
+(async () => {
+  try {
+    await client.connect();
+  } catch (e) {
+    console.log(e);
+  }
+})();
 
 export default client;
