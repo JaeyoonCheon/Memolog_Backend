@@ -15,7 +15,6 @@ import { jwtAuth } from "./middleware/jwtAuth";
 
 app.use("/", indexRouter);
 app.use("/user", userRouter);
-app.use(jwtAuth);
 app.use("/document", documentRouter);
 
 app.listen(PORT, () => {

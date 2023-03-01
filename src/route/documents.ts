@@ -13,8 +13,12 @@ router.get("/", async (req: Request, res: Response) => {
     console.log(documents);
     console.log("document query");
 
+    const previewDocuments = documents.map((doc) => {
+      return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+    });
+
     client.release();
-    res.send(documents);
+    res.send(previewDocuments);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
