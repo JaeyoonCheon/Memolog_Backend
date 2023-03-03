@@ -11,7 +11,8 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
 
   try {
     if (accessToken !== undefined && JWT_SALT !== undefined) {
-      verify(accessToken);
+      const payload = verify(accessToken);
+      req.body.payload = payload;
       next();
     }
   } catch (e) {

@@ -86,3 +86,5 @@ router.post("/:documentId", async (req: Request, res: Response) => {
     res.status(500).send("Error occured!");
   }
 });
+
+router.get("/browse", async (req: Request, res: Response) => {});

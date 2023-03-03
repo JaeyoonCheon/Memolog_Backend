@@ -14,14 +14,12 @@ router.post("/token", async (req: Request, res: Response) => {
   const refreshToken = req.headers.authorization?.split("Bearer ")[1];
   const { userId } = req.body;
 
-  console.log(refreshToken);
-  console.log(userId);
-
   try {
-    if (refreshToken !== undefined && JWT_SALT !== undefined) {
-      console.log("start refresh");
+    if (JWT_SALT === undefined) {
+      throw new Error("WrongSecureCode");
+    }
+    if (refreshToken !== undefined) {
       const result = await refreshVerify(refreshToken, Number(userId));
-      console.log(result);
       if (result === true) {
         const { token: accessToken, expireTime } = sign(Number(userId));
 
@@ -31,13 +29,23 @@ router.post("/token", async (req: Request, res: Response) => {
             expireTime,
           },
         });
+      } else {
+        throw new Error("RefreshTokenExpired");
       }
     } else {
-      throw new Error("Refresh token is expired!");
+      throw new Error("EmptyRefreshToken");
     }
   } catch (e) {
     console.log(e);
-    res.status(401).send("Token Expired!");
+    if (e instanceof Error && e.message === "RefreshTokenExpired") {
+      res.status(401).send("TokenExpired");
+    } else if (e instanceof Error && e.message === "EmptyRefreshToken") {
+      res.status(401).send("EmptyToken");
+    } else if (e instanceof Error && e.message === "WrongSecureCode") {
+      res.status(500);
+    } else {
+      res.status(500);
+    }
   }
 });
 
