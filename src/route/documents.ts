@@ -10,9 +10,6 @@ router.get("/", async (req: Request, res: Response) => {
     const documentsRows = await client.query("SELECT * FROM public.document");
     const documents = documentsRows.rows;
 
-    console.log(documents);
-    console.log("document query");
-
     const previewDocuments = documents.map((doc) => {
       return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
     });
@@ -48,7 +45,6 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    console.log(req.body);
     const { title, form, userId } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
@@ -72,15 +68,32 @@ router.post("/:documentId", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { title, form, updated_at, user_id } = req.body;
+    const { title, form, userId } = req.body;
+
+    const localeOffset = new Date().getTimezoneOffset() * 60000;
+    const updated_at = new Date(Date.now() - localeOffset);
 
     // 순서 주의
     await client.query(
       `UPDATE public.document SET title=$2, form=$3, updated_at=$4, user_id=$5 WHERE id=$1`,
-      [documentId, title, form, updated_at, user_id]
+      [documentId, title, form, updated_at, userId]
     );
     client.release();
     res.status(200).send("Data update successfully.");
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  }
+});
+
+router.delete("/:documentId", async (req: Request, res: Response) => {
+  const documentId = req.params.documentId;
+  try {
+    const client = await pool.connect();
+
+    await client.query(`DELETE FROM public.document WHERE id=$1`, [documentId]);
+    client.release();
+    res.status(200).send("Data delete successfully.");
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
