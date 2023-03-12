@@ -1,3 +1,4 @@
+import { setDefaultResultOrder } from "dns";
 import express, { Request, Response } from "express";
 
 import pool from "../database/postgreSQL/pool";
@@ -6,14 +7,19 @@ export const router = express.Router();
 
 router.get("/", async (req: Request, res: Response) => {
   const { id: userId } = req.body.payload;
+  const { sort, order } = req.query;
+
+  console.log(sort, order);
 
   try {
     const client = await pool.connect();
-    const documentsRows = await client.query(
-      "SELECT * FROM public.document WHERE user_id=$1",
-      [userId]
-    );
+
+    const query = `SELECT * FROM public.document WHERE user_id=$1 ORDER BY ${sort} ${order}`;
+
+    const documentsRows = await client.query(query, [userId]);
     const documents = documentsRows.rows;
+
+    console.log(documents);
 
     const previewDocuments = documents.map((doc) => {
       return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
@@ -50,15 +56,15 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { title, form, userId } = req.body;
+    const { title, form, userId, scope, thumbnail_url } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const created_at = new Date(Date.now() - localeOffset);
     const updated_at = created_at;
 
     await client.query(
-      `INSERT INTO public.document (title, form, created_at, updated_at, user_id) VALUES ($1, $2, $3, $4, $5)`,
-      [title, form, created_at, updated_at, userId]
+      `INSERT INTO public.document (title, form, created_at, updated_at, user_id, scope, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [title, form, created_at, updated_at, userId, scope, thumbnail_url]
     );
     client.release();
     res.status(200).send("Data insert successfully.");
@@ -70,18 +76,18 @@ router.post("/", async (req: Request, res: Response) => {
 
 router.post("/:documentId", async (req: Request, res: Response) => {
   const documentId = req.params.documentId;
+
   try {
     const client = await pool.connect();
 
-    const { title, form, userId } = req.body;
+    const { title, form, scope, thumbnail_url } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const updated_at = new Date(Date.now() - localeOffset);
 
-    // 순서 주의
     await client.query(
-      `UPDATE public.document SET title=$2, form=$3, updated_at=$4, user_id=$5 WHERE id=$1`,
-      [documentId, title, form, updated_at, userId]
+      `UPDATE public.document SET title=$1, form=$2, updated_at=$3, scope=$4, thumbnail_url=$5 WHERE id=$6`,
+      [title, form, updated_at, scope, thumbnail_url, documentId]
     );
     client.release();
     res.status(200).send("Data update successfully.");
