@@ -11,7 +11,7 @@ router.get("/", async (req: Request, res: Response) => {
     const client = await pool.connect();
 
     const documentsRows = await client.query(
-      "SELECT * FROM public.document WHERE user_id!=$1",
+      "SELECT * FROM public.document WHERE user_id!=$1 ORDER BY created_at DESC",
       [userId]
     );
     const documents = documentsRows.rows;

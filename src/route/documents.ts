@@ -7,29 +7,61 @@ export const router = express.Router();
 
 router.get("/", async (req: Request, res: Response) => {
   const { id: userId } = req.body.payload;
-  const { sort, order } = req.query;
+  const { id: documentId, cursor, sort, order } = req.query;
 
-  console.log(sort, order);
+  const LIMIT = 4;
+  const isFirstPage = documentId ? false : true;
 
-  try {
-    const client = await pool.connect();
+  const baseQuery = `SELECT * FROM public.document WHERE user_id=$1`;
 
-    const query = `SELECT * FROM public.document WHERE user_id=$1 ORDER BY ${sort} ${order}`;
+  let query = "";
 
-    const documentsRows = await client.query(query, [userId]);
-    const documents = documentsRows.rows;
+  if (isFirstPage) {
+    query = `${baseQuery} ORDER BY ${sort} ${order} LIMIT ${LIMIT}`;
 
-    console.log(documents);
+    try {
+      const client = await pool.connect();
 
-    const previewDocuments = documents.map((doc) => {
-      return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
-    });
+      const documentsRows = await client.query(query, [userId]);
+      const documents = documentsRows.rows;
 
-    client.release();
-    res.send(previewDocuments);
-  } catch (e) {
-    console.log(e);
-    res.status(500).send("Error occured!");
+      const previewDocuments = documents.map((doc) => {
+        return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+      });
+
+      client.release();
+      res.send(previewDocuments);
+    } catch (e) {}
+  } else {
+    if (order === "DESC") {
+      query = `${baseQuery} AND ${sort} < $2
+    OR (${sort} = $2 AND id>$3)
+    ORDER BY ${sort} DESC, id LIMIT ${LIMIT}`;
+    } else if (order === "ASC") {
+      query = `${baseQuery} AND ${sort} > $2
+    OR (${sort} = $2 AND id>$3)
+    ORDER BY ${sort}, id ASC LIMIT ${LIMIT}`;
+    } else {
+      throw new Error("wrong parameter");
+    }
+
+    try {
+      const client = await pool.connect();
+
+      const documentsRows = await client.query(query, [
+        userId,
+        cursor,
+        documentId,
+      ]);
+      const documents = documentsRows.rows;
+
+      const previewDocuments = documents.map((doc) => {
+        return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+      });
+
+      client.release();
+      res.send(previewDocuments);
+    } catch (e) {}
   }
 });
 
