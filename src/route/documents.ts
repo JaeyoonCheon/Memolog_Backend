@@ -8,8 +8,8 @@ export const router = express.Router();
 router.get("/", async (req: Request, res: Response) => {
   const { id: userId } = req.body.payload;
   const { id: documentId, cursor, sort, order } = req.query;
+  const LIMIT = process.env.DOCUMENT_LIMIT;
 
-  const LIMIT = 4;
   const isFirstPage = documentId ? false : true;
 
   const baseQuery = `SELECT * FROM public.document WHERE user_id=$1`;
