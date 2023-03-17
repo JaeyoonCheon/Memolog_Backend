@@ -19,7 +19,7 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
 
       next();
     } else {
-      throw new Error();
+      throw new Error("No Access Token");
     }
   } catch (e) {
     console.log("Error send");
