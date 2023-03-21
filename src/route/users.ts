@@ -56,12 +56,12 @@ router.post("/signin", async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const isExistRows = await client.query(
-      `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS isExist`,
+      `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS exist`,
       [email]
     );
-    const isExist = isExistRows.rows[0].isExist;
+    const isExist = isExistRows.rows[0].exist;
 
-    if (isExist === false) {
+    if (isExist) {
       throw new Error("Email or password is wrong!");
     }
 
