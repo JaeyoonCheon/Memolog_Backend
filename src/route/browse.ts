@@ -13,8 +13,8 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
     const query = isFirstPage
-      ? `SELECT * FROM public.document WHERE user_id!=$1 ORDER BY created_at DESC, id LIMIT $2`
-      : `SELECT * FROM public.document WHERE user_id!=$1 AND created_at < $2 OR (created_at = $2 AND id > $3) ORDER BY created_at DESC, id LIMIT $4`;
+      ? `SELECT * FROM public.document WHERE user_id!=$1 AND scope='public' ORDER BY created_at DESC, id LIMIT $2`
+      : `SELECT * FROM public.document WHERE user_id!=$1 AND scope='public' AND created_at < $2 OR (created_at = $2 AND id > $3) ORDER BY created_at DESC, id LIMIT $4`;
 
     if (isFirstPage) {
       const documentsRows = await client.query(query, [userId, LIMIT]);
