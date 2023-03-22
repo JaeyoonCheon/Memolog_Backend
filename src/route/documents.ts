@@ -66,8 +66,6 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// SELECT * FROM public.document D LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id LEFT JOIN public.hashtag H ON DH.hash_id=H.id;
-
 router.get("/:documentId", async (req: Request, res: Response) => {
   const documentId = req.params.documentId;
 
@@ -78,6 +76,18 @@ router.get("/:documentId", async (req: Request, res: Response) => {
       [documentId]
     );
     const document = documentsRows.rows[0];
+    const hashtagRows = await client.query({
+      text: `SELECT H.name
+    FROM public.document D 
+    LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id 
+    LEFT JOIN public.hashtag H ON DH.hash_id=H.id
+    WHERE D.id=$1;`,
+      values: [document.id],
+      rowMode: "array",
+    });
+    const hashtags = hashtagRows.rows[0];
+
+    console.log(hashtags);
 
     client.release();
     res.send(document);
