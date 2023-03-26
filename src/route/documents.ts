@@ -98,10 +98,11 @@ router.get("/:documentId", async (req: Request, res: Response) => {
 });
 
 router.post("/", async (req: Request, res: Response) => {
+  console.log("New Post");
   try {
     const client = await pool.connect();
 
-    const { title, form, userId, scope, thumbnail_url } = req.body;
+    const { title, form, userId, scope, thumbnail_url, hashtags } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const created_at = new Date(Date.now() - localeOffset);
@@ -111,8 +112,6 @@ router.post("/", async (req: Request, res: Response) => {
       `INSERT INTO public.document (title, form, created_at, updated_at, user_id, scope, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`,
       [title, form, created_at, updated_at, userId, scope, thumbnail_url]
     );
-
-    const hashtags = ["test", "test1"];
 
     if (hashtags instanceof Array && hashtags.length > 0) {
       console.log("add hashtags!");

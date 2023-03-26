@@ -12,11 +12,13 @@ import { router as indexRouter } from "./route/index";
 import { router as documentRouter } from "./route/documents";
 import { router as userRouter } from "./route/users";
 import { router as browseRouter } from "./route/browse";
+import { router as authRouter } from "./route/auth";
 import { jwtAuth } from "./middleware/jwtAuth";
 
 app.use("/", indexRouter);
-app.use("/user", userRouter);
+app.use("/auth", authRouter);
 app.use(jwtAuth);
+app.use("/user", userRouter);
 app.use("/document", documentRouter);
 app.use("/browse", browseRouter);
 
