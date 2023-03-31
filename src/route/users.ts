@@ -31,12 +31,12 @@ router.patch("/:userId/profile", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { name, profile_image } = req.body;
+    const { name, profile_image_url } = req.body;
 
     // 순서 주의
     const { rows } = await client.query(
-      "UPDATE public.user SET name=$2, profile_image=$3 where id=$1",
-      [userId, name, profile_image]
+      "UPDATE public.user SET name=$2, profile_image_url=$3 where id=$1",
+      [userId, name, profile_image_url]
     );
 
     client.release();
@@ -65,7 +65,7 @@ router.patch("/:userId/pw", async (req: Request, res: Response) => {
     if (password === oldPassword) {
       // 순서 주의
       const profileRows = await client.query(
-        "UPDATE public.user SET name=$2, profile_image=$3 where id=$1",
+        "UPDATE public.user SET name=$2, profile_image_url=$3 where id=$1",
         [password]
       );
       const profile = profileRows.rows[0];

@@ -114,7 +114,7 @@ router.post("/signup", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { name, email, profile_image = "", password } = req.body;
+    const { name, email, profile_image_url = "", password } = req.body;
 
     //유효성 검증
 
@@ -127,8 +127,15 @@ router.post("/signup", async (req: Request, res: Response) => {
     const updated_at = created_at;
 
     await client.query(
-      `INSERT INTO public.user (name, email, profile_image, password, created_at, updated_at) values ($1, $2, $3, $4, $5, $6);`,
-      [name, email, profile_image, encryptedPassword, created_at, updated_at]
+      `INSERT INTO public.user (name, email, profile_image_url, password, created_at, updated_at) values ($1, $2, $3, $4, $5, $6);`,
+      [
+        name,
+        email,
+        profile_image_url,
+        encryptedPassword,
+        created_at,
+        updated_at,
+      ]
     );
 
     client.release();

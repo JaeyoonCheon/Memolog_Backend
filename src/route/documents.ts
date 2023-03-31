@@ -81,16 +81,19 @@ router.get("/:documentId", async (req: Request, res: Response) => {
     FROM public.document D 
     LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id 
     LEFT JOIN public.hashtag H ON DH.hash_id=H.id
-    WHERE D.id=$1;`,
+    WHERE D.id=$1 ORDER BY DH.doc_hash_id ASC;`,
       values: [document.id],
       rowMode: "array",
     });
-    const hashtags = hashtagRows.rows[0];
 
-    console.log(hashtags);
+    const hashtags = hashtagRows.rows.flat();
+
+    const newDocument = { hashtags: hashtags, ...document };
+
+    console.log(newDocument);
 
     client.release();
-    res.send(document);
+    res.send(newDocument);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
