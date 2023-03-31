@@ -154,33 +154,54 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 router.post("/:documentId", async (req: Request, res: Response) => {
-  const documentId = req.params.documentId;
+  const documentId = Number(req.params.documentId);
+
+  const client = await pool.connect();
 
   try {
-    const client = await pool.connect();
-
     const { title, form, scope, thumbnail_url, hashtags } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const updated_at = new Date(Date.now() - localeOffset);
 
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM public.document_hashtag WHERE doc_id=$1`, [
+      documentId,
+    ]);
     await client.query(
       `UPDATE public.document SET title=$1, form=$2, updated_at=$3, scope=$4, thumbnail_url=$5 WHERE id=$6`,
       [title, form, updated_at, scope, thumbnail_url, documentId]
     );
-    client.release();
+
+    if (hashtags instanceof Array && hashtags.length > 0) {
+      const hashtagIdsPromise = hashtags.map((hashtag) => addHashtag(hashtag));
+      const hashtagIds = await Promise.all(hashtagIdsPromise);
+
+      const docHashPromise = hashtagIds.map((hashId) =>
+        addDocumentHashtag(documentId, hashId)
+      );
+      await Promise.all(docHashPromise);
+
+      const hashAccessPromise = hashtagIds.map((hashId) =>
+        addHashtagLog(hashId, updated_at)
+      );
+      await Promise.all(hashAccessPromise);
+    }
+
     res.status(200).send("Data update successfully.");
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
 
 router.delete("/:documentId", async (req: Request, res: Response) => {
   const documentId = req.params.documentId;
-  try {
-    const client = await pool.connect();
+  const client = await pool.connect();
 
+  try {
     await client.query(`DELETE FROM public.document WHERE id=$1`, [documentId]);
     client.release();
     res.status(200).send("Data delete successfully.");
