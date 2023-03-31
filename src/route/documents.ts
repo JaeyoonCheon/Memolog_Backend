@@ -2,7 +2,11 @@ import { setDefaultResultOrder } from "dns";
 import express, { Request, Response } from "express";
 
 import pool from "../database/postgreSQL/pool";
-import { addHashtag, addDocumentHashtag } from "../controller/documents";
+import {
+  addHashtag,
+  addDocumentHashtag,
+  addHashtagLog,
+} from "../controller/documents";
 
 export const router = express.Router();
 
@@ -102,14 +106,15 @@ router.get("/:documentId", async (req: Request, res: Response) => {
 
 router.post("/", async (req: Request, res: Response) => {
   console.log("New Post");
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-
     const { title, form, userId, scope, thumbnail_url, hashtags } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const created_at = new Date(Date.now() - localeOffset);
     const updated_at = created_at;
+
+    await client.query("BEGIN");
 
     const docIdRows = await client.query(
       `INSERT INTO public.document (title, form, created_at, updated_at, user_id, scope, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`,
@@ -129,15 +134,22 @@ router.post("/", async (req: Request, res: Response) => {
       const docHashPromise = hashtagIds.map((hashId) =>
         addDocumentHashtag(docId, hashId)
       );
-
       await Promise.all(docHashPromise);
-    }
 
-    client.release();
+      const hashAccessPromise = hashtagIds.map((hashId) =>
+        addHashtagLog(hashId, created_at)
+      );
+      await Promise.all(hashAccessPromise);
+    }
+    await client.query("COMMIT");
+
     res.status(200).send("Data insert successfully.");
   } catch (e) {
+    await client.query("ROLLBACK");
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
 
@@ -147,7 +159,7 @@ router.post("/:documentId", async (req: Request, res: Response) => {
   try {
     const client = await pool.connect();
 
-    const { title, form, scope, thumbnail_url } = req.body;
+    const { title, form, scope, thumbnail_url, hashtags } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const updated_at = new Date(Date.now() - localeOffset);

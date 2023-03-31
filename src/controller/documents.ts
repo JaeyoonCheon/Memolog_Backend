@@ -1,9 +1,8 @@
 import pool from "../database/postgreSQL/pool";
 
 export const addHashtag = async (name: string) => {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-
     const isExistRows = await client.query(
       `SELECT EXISTS (SELECT * FROM public.hashtag WHERE name=$1) AS exist`,
       [name]
@@ -26,6 +25,23 @@ export const addHashtag = async (name: string) => {
     return result.rows[0].id;
   } catch (e) {
     throw e;
+  } finally {
+    client.release();
+  }
+};
+
+export const addHashtagLog = async (hashtagId: number, accessTime: Date) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query(
+      `INSERT INTO public.hashtag_access (hashtag_id, access_time) VALUES ($1, $2)`,
+      [hashtagId, accessTime]
+    );
+  } catch (e) {
+    throw e;
+  } finally {
+    client.release();
   }
 };
 
