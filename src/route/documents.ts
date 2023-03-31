@@ -187,9 +187,11 @@ router.post("/:documentId", async (req: Request, res: Response) => {
       );
       await Promise.all(hashAccessPromise);
     }
+    await client.query("COMMIT");
 
     res.status(200).send("Data update successfully.");
   } catch (e) {
+    await client.query("ROLLBACK");
     console.log(e);
     res.status(500).send("Error occured!");
   } finally {
@@ -202,11 +204,19 @@ router.delete("/:documentId", async (req: Request, res: Response) => {
   const client = await pool.connect();
 
   try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM public.document_hashtag WHERE doc_id=$1`, [
+      documentId,
+    ]);
     await client.query(`DELETE FROM public.document WHERE id=$1`, [documentId]);
-    client.release();
+    await client.query("COMMIT");
+
     res.status(200).send("Data delete successfully.");
   } catch (e) {
+    await client.query("ROLLBACK");
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
