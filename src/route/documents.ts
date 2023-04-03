@@ -7,74 +7,144 @@ import {
   addDocumentHashtag,
   addHashtagLog,
 } from "../controller/documents";
+import { ResponseError } from "../types";
 
 export const router = express.Router();
 
 router.get("/", async (req: Request, res: Response) => {
-  const { id: userId } = req.body.payload;
-  const { id: documentId, cursor, sort, order } = req.query;
-  const LIMIT = process.env.DOCUMENT_LIMIT;
+  const client = await pool.connect();
+  try {
+    const { id: userId } = req.body.payload;
+    const { id: documentId, cursor, sort, order } = req.query;
+    const LIMIT = process.env.DOCUMENT_LIMIT;
 
-  const isFirstPage = documentId ? false : true;
+    const isFirstPage = documentId ? false : true;
 
-  const baseQuery = `SELECT * FROM public.document WHERE user_id=$1`;
-
-  let query = "";
-
-  if (isFirstPage) {
-    query = `${baseQuery} ORDER BY ${sort} ${order} LIMIT ${LIMIT}`;
-
-    try {
-      const client = await pool.connect();
-
-      const documentsRows = await client.query(query, [userId]);
-      const documents = documentsRows.rows;
-
-      const previewDocuments = documents.map((doc) => {
-        return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+    if ((isFirstPage && !documentId) || !cursor || !sort || !order) {
+      throw new ResponseError({
+        name: "ER02",
+        httpCode: 400,
+        message: "Wrong parameter",
       });
-
-      client.release();
-      res.send(previewDocuments);
-    } catch (e) {}
-  } else {
-    if (order === "DESC") {
-      query = `${baseQuery} AND ${sort} < $2
-    OR (${sort} = $2 AND id>$3)
-    ORDER BY ${sort} DESC, id LIMIT ${LIMIT}`;
-    } else if (order === "ASC") {
-      query = `${baseQuery} AND ${sort} > $2
-    OR (${sort} = $2 AND id>$3)
-    ORDER BY ${sort}, id ASC LIMIT ${LIMIT}`;
-    } else {
-      throw new Error("wrong parameter");
     }
 
-    try {
-      const client = await pool.connect();
+    let query = "";
+    let values = [];
 
-      const documentsRows = await client.query(query, [
-        userId,
-        cursor,
-        documentId,
-      ]);
-      const documents = documentsRows.rows;
+    if (isFirstPage) {
+      query = `
+    SELECT * FROM public.document WHERE user_id=$1 
+    ORDER BY ${sort} ${order} LIMIT ${LIMIT}
+    `;
+      values = [userId];
+    } else {
+      if (order === "DESC") {
+        query = `
+      SELECT * FROM public.document 
+      WHERE user_id = $1 AND ${sort} < $2 OR (${sort} = $2 AND id > $3)
+      ORDER BY ${sort} DESC, id LIMIT ${LIMIT}
+      `;
+        values = [userId, cursor, documentId];
+      } else {
+        query = `
+      SELECT * FROM public.document 
+      WHERE user_id = $1 AND ${sort} > $2 OR (${sort} = $2 AND id > $3)
+      ORDER BY ${sort}, id ASC LIMIT ${LIMIT}
+      `;
+        values = [userId, cursor, documentId];
+      }
+    }
 
-      const previewDocuments = documents.map((doc) => {
-        return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
-      });
+    const documentsRows = await client.query({
+      text: query,
+      values: values,
+    });
+    const documents = documentsRows.rows;
 
-      client.release();
-      res.send(previewDocuments);
-    } catch (e) {}
+    const previewDocuments = documents.map((doc) => {
+      return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+    });
+
+    res.send(previewDocuments);
+  } catch (e) {
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    }
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/search", async (req: Request, res: Response) => {
+  const { id: userId } = req.body.payload;
+  const { id: documentId, cursor, keyword } = req.query;
+  const LIMIT = process.env.DOCUMENT_LIMIT;
+  const isFirstQuery = !documentId && !cursor;
+
+  console.log(`keyword: ${keyword} docId: ${documentId} cursor: ${cursor}`);
+
+  const client = await pool.connect();
+
+  if (!keyword || typeof keyword !== "string") {
+    res.status(500).send("Wrong keyword");
+    return;
+  }
+  const searchKeyword = keyword.startsWith("#")
+    ? keyword.substring(1)
+    : keyword;
+
+  console.log("searchKeyword: " + searchKeyword);
+
+  try {
+    let query = isFirstQuery
+      ? `
+    SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND title LIKE '%'||$1||'%' 
+    UNION 
+    SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND form LIKE '%'||$1||'%' 
+    UNION 
+    SELECT D.id, D.title, D.form, D.created_at FROM public.document D
+    LEFT JOIN public.document_hashtag DH ON D.id = DH.doc_id 
+    LEFT JOIN public.hashtag H ON DH.hash_id = H.id WHERE user_id = $2 AND H.name LIKE '%'||$1||'%'
+    ORDER BY created_at DESC, id DESC LIMIT $3
+    `
+      : `
+    SELECT id, title, form, created_at
+    FROM(SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND title LIKE '%'||$1||'%' 
+    UNION 
+    SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND form LIKE '%'||$1||'%' 
+    UNION 
+    SELECT D.id, D.title, D.form, D.created_at FROM public.document D
+    LEFT JOIN public.document_hashtag DH ON D.id = DH.doc_id 
+    LEFT JOIN public.hashtag H ON DH.hash_id = H.id WHERE user_id = $2 AND H.name LIKE '%'||$1||'%') AS SR
+    WHERE id > $3 OR (id = $3 AND created_at < $4)
+    ORDER BY created_at DESC, id DESC LIMIT $5
+    `;
+    const documentRows = await client.query(
+      query,
+      isFirstQuery
+        ? [searchKeyword, userId, LIMIT]
+        : [searchKeyword, userId, documentId, cursor, LIMIT]
+    );
+    const documents = documentRows.rows;
+    const previewDocuments = documents.map((doc) => {
+      return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
+    });
+
+    res.send(previewDocuments);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
 
 router.get("/:documentId", async (req: Request, res: Response) => {
   const documentId = req.params.documentId;
 
+  const client = await pool.connect();
+
   try {
-    const client = await pool.connect();
     const documentsRows = await client.query(
       "SELECT * FROM public.document WHERE id=$1",
       [documentId]

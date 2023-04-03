@@ -1,11 +1,10 @@
-import { Request, Response } from "express";
-
-import express from "express";
+import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 
 import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
 import { sign, refresh, refreshVerify } from "../lib/authToken/jwt";
+import { CustomError, ResponseError } from "../types";
 
 export const router = express.Router();
 
@@ -19,7 +18,10 @@ router.post("/token", async (req: Request, res: Response) => {
 
   try {
     if (JWT_SALT === undefined) {
-      throw new Error("WrongSecureCode");
+      throw new CustomError({
+        name: "WrongSecureCode",
+        message: "Wrong operation JWT token secure",
+      });
     }
     if (refreshToken !== undefined) {
       const result = await refreshVerify(refreshToken, Number(userId));
