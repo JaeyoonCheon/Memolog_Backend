@@ -109,19 +109,20 @@ router.get("/search", async (req: Request, res: Response) => {
     SELECT D.id, D.title, D.form, D.created_at FROM public.document D
     LEFT JOIN public.document_hashtag DH ON D.id = DH.doc_id 
     LEFT JOIN public.hashtag H ON DH.hash_id = H.id WHERE user_id = $2 AND H.name LIKE '%'||$1||'%'
-    ORDER BY created_at DESC, id DESC LIMIT $3
+    ORDER BY created_at DESC, id LIMIT $3
     `
       : `
     SELECT id, title, form, created_at
-    FROM(SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND title LIKE '%'||$1||'%' 
+    FROM
+    (SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND title LIKE '%'||$1||'%' 
     UNION 
     SELECT id, title, form, created_at FROM public.document WHERE user_id = $2 AND form LIKE '%'||$1||'%' 
     UNION 
     SELECT D.id, D.title, D.form, D.created_at FROM public.document D
     LEFT JOIN public.document_hashtag DH ON D.id = DH.doc_id 
     LEFT JOIN public.hashtag H ON DH.hash_id = H.id WHERE user_id = $2 AND H.name LIKE '%'||$1||'%') AS SR
-    WHERE id > $3 OR (id = $3 AND created_at < $4)
-    ORDER BY created_at DESC, id DESC LIMIT $5
+    WHERE created_at < $4 OR (created_at = $4 AND id < $3)
+    ORDER BY created_at DESC, id LIMIT $5
     `;
     const documentRows = await client.query(
       query,
