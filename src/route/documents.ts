@@ -20,7 +20,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     const isFirstPage = documentId ? false : true;
 
-    if ((isFirstPage && !documentId) || !cursor || !sort || !order) {
+    if (!isFirstPage && (!cursor || !sort || !order)) {
       throw new ResponseError({
         name: "ER02",
         httpCode: 400,
@@ -28,30 +28,34 @@ router.get("/", async (req: Request, res: Response) => {
       });
     }
 
+    console.log(
+      `isFirstPage: ${isFirstPage} / cursor: ${cursor} / sort: ${sort} / order: ${order}`
+    );
+
     let query = "";
     let values = [];
 
     if (isFirstPage) {
       query = `
     SELECT * FROM public.document WHERE user_id=$1 
-    ORDER BY ${sort} ${order} LIMIT ${LIMIT}
+    ORDER BY ${sort} ${order} LIMIT $2
     `;
-      values = [userId];
+      values = [userId, LIMIT];
     } else {
       if (order === "DESC") {
         query = `
       SELECT * FROM public.document 
       WHERE user_id = $1 AND ${sort} < $2 OR (${sort} = $2 AND id > $3)
-      ORDER BY ${sort} DESC, id LIMIT ${LIMIT}
+      ORDER BY ${sort} DESC, id LIMIT $4
       `;
-        values = [userId, cursor, documentId];
+        values = [userId, cursor, documentId, LIMIT];
       } else {
         query = `
       SELECT * FROM public.document 
       WHERE user_id = $1 AND ${sort} > $2 OR (${sort} = $2 AND id > $3)
-      ORDER BY ${sort}, id ASC LIMIT ${LIMIT}
+      ORDER BY ${sort}, id ASC LIMIT $4
       `;
-        values = [userId, cursor, documentId];
+        values = [userId, cursor, documentId, LIMIT];
       }
     }
 
@@ -159,8 +163,9 @@ router.get("/:documentId", async (req: Request, res: Response) => {
       values: [document.id],
       rowMode: "array",
     });
-
-    const hashtags = hashtagRows.rows.flat();
+    const hashtags = hashtagRows.rows
+      .flat()
+      .filter((hashtag) => hashtag !== null);
 
     const newDocument = { hashtags: hashtags, ...document };
 
@@ -178,6 +183,7 @@ router.post("/", async (req: Request, res: Response) => {
   console.log("New Post");
   const client = await pool.connect();
   try {
+    console.log(req.body);
     const { title, form, userId, scope, thumbnail_url, hashtags } = req.body;
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;

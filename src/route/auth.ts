@@ -5,6 +5,7 @@ import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
 import { sign, refresh, refreshVerify } from "../lib/authToken/jwt";
 import { CustomError, ResponseError } from "../types";
+import client from "../database/redis/client";
 
 export const router = express.Router();
 
@@ -34,30 +35,37 @@ router.post("/token", async (req: Request, res: Response) => {
             expireTime,
           },
         });
+        return;
       } else {
-        throw new Error("RefreshTokenExpired");
+        throw new CustomError({
+          name: "ER05",
+          message: "Refresh token expired",
+        });
       }
     } else {
-      throw new Error("EmptyRefreshToken");
+      throw new ResponseError({
+        name: "ER02",
+        httpCode: 400,
+        message: "Empty refresh token",
+      });
     }
   } catch (e) {
     console.log(e);
-    if (e instanceof Error && e.message === "RefreshTokenExpired") {
-      res.status(401).send("TokenExpired");
-    } else if (e instanceof Error && e.message === "EmptyRefreshToken") {
-      res.status(401).send("EmptyToken");
-    } else if (e instanceof Error && e.message === "WrongSecureCode") {
-      res.status(500);
+    if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
+    } else if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
     } else {
-      res.status(500);
+      console.log("Unhandled Error!");
+      res.status(500).send("Internal Server Error");
+      return;
     }
   }
 });
 
 router.post("/signin", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-
     const { email, password } = req.body;
 
     const isExistRows = await client.query(
@@ -67,7 +75,11 @@ router.post("/signin", async (req: Request, res: Response) => {
     const isExist = isExistRows.rows[0].isExist;
 
     if (isExist === false) {
-      throw new Error("Email or password is wrong!");
+      throw new ResponseError({
+        name: "ER08",
+        httpCode: 400,
+        message: "Invalid Email or Password",
+      });
     }
 
     const savedPasswordRows = await client.query(
@@ -77,7 +89,11 @@ router.post("/signin", async (req: Request, res: Response) => {
     const savedPassword = savedPasswordRows.rows[0].password;
     const compareResult = await bcrypt.compare(password, savedPassword);
     if (!compareResult) {
-      throw new Error("Email or password is wrong!");
+      throw new ResponseError({
+        name: "ER08",
+        httpCode: 400,
+        message: "Invalid Email or Password",
+      });
     }
 
     const userRows = await client.query(
@@ -96,7 +112,6 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     await redisClient.set(String(userId), refreshToken);
 
-    client.release();
     res.status(200).send({
       token: { accessToken, refreshToken, expireTime },
       user: {
@@ -108,14 +123,22 @@ router.post("/signin", async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
+    } else if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else {
+      console.log("Unhandled Error!");
+      res.status(500).send("Internal Server Error");
+    }
+  } finally {
+    client.release();
   }
 });
 
 router.post("/signup", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-
     const { name, email, profile_image_url = "", password } = req.body;
 
     //유효성 검증
@@ -129,7 +152,9 @@ router.post("/signup", async (req: Request, res: Response) => {
     const updated_at = created_at;
 
     await client.query(
-      `INSERT INTO public.user (name, email, profile_image_url, password, created_at, updated_at) values ($1, $2, $3, $4, $5, $6);`,
+      `INSERT INTO public.user 
+      (name, email, profile_image_url, password, created_at, updated_at) 
+      values ($1, $2, $3, $4, $5, $6);`,
       [
         name,
         email,
@@ -140,10 +165,11 @@ router.post("/signup", async (req: Request, res: Response) => {
       ]
     );
 
-    client.release();
     res.status(200).send("Data insert successfully.");
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
