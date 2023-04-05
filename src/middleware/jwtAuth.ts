@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
+import { TokenExpiredError, VerifyErrors } from "jsonwebtoken";
 
 import { verify } from "../lib/authToken/jwt";
 import { CustomError, ResponseError } from "../types";
+import { JsonWebTokenError } from "jsonwebtoken";
 
 dotenv.config();
 
@@ -34,12 +36,36 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
   } catch (e) {
     console.error(e);
     if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
     } else if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
+    } else if (e instanceof TokenExpiredError) {
+      const error = new ResponseError({
+        name: "ER04",
+        message: e.message,
+        httpCode: 401,
+      });
+      res.status(error.httpCode).send(error);
+    } else if (e instanceof JsonWebTokenError) {
+      const error = new ResponseError({
+        name: "ER09",
+        message: e.message,
+        httpCode: 400,
+      });
+      res.status(error.httpCode).send(error);
     } else {
       console.log("Unhandled Error!");
-      res.status(500).send("Internal Server Error");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
     }
   }
 };

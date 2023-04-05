@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { DatabaseError } from "pg";
 
 import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
@@ -125,6 +126,13 @@ router.post("/signin", async (req: Request, res: Response) => {
     console.log(e);
     if (e instanceof CustomError) {
       res.status(500).send("Internal Server Error");
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
     } else if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
     } else {
@@ -168,7 +176,22 @@ router.post("/signup", async (req: Request, res: Response) => {
     res.status(200).send("Data insert successfully.");
   } catch (e) {
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }

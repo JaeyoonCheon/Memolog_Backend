@@ -1,5 +1,5 @@
-import { setDefaultResultOrder } from "dns";
 import express, { Request, Response } from "express";
+import { DatabaseError } from "pg";
 
 import pool from "../database/postgreSQL/pool";
 import {
@@ -73,6 +73,21 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (e) {
     if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
     }
   } finally {
     client.release();
@@ -90,8 +105,11 @@ router.get("/search", async (req: Request, res: Response) => {
   const client = await pool.connect();
 
   if (!keyword || typeof keyword !== "string") {
-    res.status(500).send("Wrong keyword");
-    return;
+    throw new ResponseError({
+      name: "ER02",
+      httpCode: 400,
+      message: "Wrong keyword",
+    });
   }
   const searchKeyword = keyword.startsWith("#")
     ? keyword.substring(1)
@@ -137,8 +155,24 @@ router.get("/search", async (req: Request, res: Response) => {
 
     res.send(previewDocuments);
   } catch (e) {
-    console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
@@ -156,11 +190,13 @@ router.get("/:documentId", async (req: Request, res: Response) => {
     );
     const document = documentsRows.rows[0];
     const hashtagRows = await client.query({
-      text: `SELECT H.name
-    FROM public.document D 
-    LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id 
-    LEFT JOIN public.hashtag H ON DH.hash_id=H.id
-    WHERE D.id=$1 ORDER BY DH.doc_hash_id ASC;`,
+      text: `
+      SELECT H.name
+      FROM public.document D 
+      LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id 
+      LEFT JOIN public.hashtag H ON DH.hash_id=H.id
+      WHERE D.id=$1 ORDER BY DH.doc_hash_id ASC;
+      `,
       values: [document.id],
       rowMode: "array",
     });
@@ -176,7 +212,22 @@ router.get("/:documentId", async (req: Request, res: Response) => {
     res.send(newDocument);
   } catch (e) {
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   }
 });
 
@@ -194,7 +245,10 @@ router.post("/", async (req: Request, res: Response) => {
     await client.query("BEGIN");
 
     const docIdRows = await client.query(
-      `INSERT INTO public.document (title, form, created_at, updated_at, user_id, scope, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`,
+      `
+      INSERT INTO public.document (title, form, created_at, updated_at, user_id, scope, thumbnail_url) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
+      `,
       [title, form, created_at, updated_at, userId, scope, thumbnail_url]
     );
 
@@ -224,7 +278,22 @@ router.post("/", async (req: Request, res: Response) => {
   } catch (e) {
     await client.query("ROLLBACK");
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
@@ -270,7 +339,22 @@ router.post("/:documentId", async (req: Request, res: Response) => {
   } catch (e) {
     await client.query("ROLLBACK");
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
@@ -292,7 +376,22 @@ router.delete("/:documentId", async (req: Request, res: Response) => {
   } catch (e) {
     await client.query("ROLLBACK");
     console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }

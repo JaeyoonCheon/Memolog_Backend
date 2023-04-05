@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import { DatabaseError } from "pg";
 
 import pool from "../database/postgreSQL/pool";
 import { ResponseError } from "../types";
@@ -18,10 +19,18 @@ router.get("/", async (req: Request, res: Response) => {
     let values = [];
 
     if (isFirstPage) {
-      query = `SELECT * FROM public.document WHERE user_id!=$1 AND scope='public' ORDER BY created_at DESC, id LIMIT $2`;
+      query = `
+      SELECT * FROM public.document 
+      WHERE user_id!=$1 AND scope='public' 
+      ORDER BY created_at DESC, id LIMIT $2
+      `;
       values = [userId, LIMIT];
     } else {
-      query = `SELECT * FROM public.document WHERE user_id!=$1 AND scope='public' AND created_at < $2 OR (created_at = $2 AND id > $3) ORDER BY created_at DESC, id LIMIT $4`;
+      query = `
+      SELECT * FROM public.document 
+      WHERE user_id!=$1 AND scope='public' AND created_at < $2 OR (created_at = $2 AND id > $3) 
+      ORDER BY created_at DESC, id LIMIT $4
+      `;
       values = [userId, cursor, documentId, LIMIT];
     }
 
@@ -42,8 +51,24 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.send(previewDocuments);
   } catch (e) {
-    console.log(e);
-    res.status(500).send("Error occured!");
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
