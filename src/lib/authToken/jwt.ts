@@ -3,6 +3,7 @@ import * as jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 import client from "../../database/redis/client";
+import { ResponseError } from "../../types";
 
 const SECRET: jwt.Secret = process.env.SALT || "";
 
@@ -28,7 +29,7 @@ const verify = (token: string) => {
     const decodedToken = jwt.verify(token, SECRET);
     return decodedToken;
   } catch (e) {
-    throw new Error("Verify Error : " + e);
+    throw e;
   }
 };
 
@@ -41,23 +42,19 @@ const refresh = () => {
 
 const refreshVerify = async (token: string, userId: Number) => {
   try {
-    console.log("get Refresh Token!");
     const refreshData = await client.get(String(userId));
-    console.log("success!");
 
     if (token === refreshData) {
-      try {
-        jwt.verify(token, SECRET);
-        return true;
-      } catch (err) {
-        return false;
-      }
+      jwt.verify(token, SECRET);
     } else {
-      return false;
+      throw new ResponseError({
+        name: "ER09",
+        message: "Token data error",
+        httpCode: 400,
+      });
     }
-  } catch (err) {
-    console.log(err);
-    return false;
+  } catch (e) {
+    throw e;
   }
 };
 

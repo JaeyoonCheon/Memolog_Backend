@@ -35,6 +35,8 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     }
   } catch (e) {
     console.error(e);
+    console.log(e);
+    console.dir(e);
     if (e instanceof CustomError) {
       const error = new ResponseError({
         name: "ER00",

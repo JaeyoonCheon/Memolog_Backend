@@ -26,28 +26,14 @@ router.post("/token", async (req: Request, res: Response) => {
       });
     }
     if (refreshToken !== undefined) {
-      const result = await refreshVerify(refreshToken, Number(userId));
-      if (result === true) {
-        const { token: accessToken, expireTime } = sign(Number(userId));
+      await refreshVerify(refreshToken, Number(userId));
+      const { token: accessToken, expireTime } = sign(Number(userId));
 
-        res.status(200).send({
-          token: {
-            accessToken,
-            expireTime,
-          },
-        });
-        return;
-      } else {
-        throw new CustomError({
-          name: "ER05",
-          message: "Refresh token expired",
-        });
-      }
-    } else {
-      throw new ResponseError({
-        name: "ER02",
-        httpCode: 400,
-        message: "Empty refresh token",
+      res.status(200).send({
+        token: {
+          accessToken,
+          expireTime,
+        },
       });
     }
   } catch (e) {
