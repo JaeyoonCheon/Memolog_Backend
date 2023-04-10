@@ -1,15 +1,17 @@
 import { promisify } from "util";
 import * as jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import ms from "ms";
 
 import client from "../../database/redis/client";
 import { ResponseError } from "../../types";
 
 const SECRET: jwt.Secret = process.env.SALT || "";
+const ACCESS_EXPIRE: string = process.env.ACCESS_EXPIRE || "1h";
 
 const sign = (userId: Number) => {
   const expireTime = new Date();
-  expireTime.setHours(expireTime.getHours() + 1);
+  expireTime.setTime(expireTime.getTime() + ms(ACCESS_EXPIRE));
 
   const payload = {
     id: userId,
