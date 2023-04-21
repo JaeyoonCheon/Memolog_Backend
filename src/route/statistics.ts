@@ -25,12 +25,28 @@ router.get("/trend", async (req: Request, res: Response) => {
 
     const result = await client.query(query, [LIMIT]);
 
-    console.log(result);
-
     const stat = result.rows;
 
     res.status(200).json(stat);
   } catch (e) {
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
@@ -44,16 +60,16 @@ router.get("/frequent", async (req: Request, res: Response) => {
 
   try {
     const query = `
-            SELECT h.id, h.name, COUNT(h.name) cnt FROM public.document AS d
-            FULL OUTER JOIN public.document_hashtag AS dh
-            ON d.id=dh.doc_id
-            LEFT JOIN public.hashtag AS h
-            ON dh.hash_id=h.id
-            WHERE d.user_id=$1 AND dh.doc_id IS NOT NULL
-            GROUP BY h.id, h.name
-            ORDER BY cnt DESC
-            LIMIT $2
-        `;
+        SELECT h.id, h.name, COUNT(h.name) cnt FROM public.document AS d
+        FULL OUTER JOIN public.document_hashtag AS dh
+        ON d.id=dh.doc_id
+        LEFT JOIN public.hashtag AS h
+        ON dh.hash_id=h.id
+        WHERE d.user_id=$1 AND dh.doc_id IS NOT NULL
+        GROUP BY h.id, h.name
+        ORDER BY cnt DESC
+        LIMIT $2
+    `;
 
     const result = await client.query(query, [userId, LIMIT]);
 
@@ -63,6 +79,24 @@ router.get("/frequent", async (req: Request, res: Response) => {
 
     res.status(200).json(stat);
   } catch (e) {
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else {
+      console.log("Unhandled Error!");
+      const error = new ResponseError({
+        name: "ER00",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    }
   } finally {
     client.release();
   }
