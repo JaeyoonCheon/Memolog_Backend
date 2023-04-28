@@ -182,3 +182,45 @@ router.post("/signup", async (req: Request, res: Response) => {
     client.release();
   }
 });
+
+router.post("accValidation", async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { email } = req.body;
+
+    const result = await client.query(
+      `SELECT u.email FROM public.user AS u
+      WHERE u.email=$1;`,
+      [email]
+    );
+
+    if (result.rowCount > 0) {
+      throw new ResponseError({
+        name: "ER11",
+        httpCode: 400,
+        message: "Account validation failed.",
+      });
+    }
+
+    res.status(200).send("Check Successful.");
+  } catch (e) {
+    console.log(e);
+    if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
+    } else if (e instanceof DatabaseError) {
+      const error = new ResponseError({
+        name: "ER10",
+        httpCode: 500,
+        message: "Internal Server Error",
+      });
+      res.status(500).send(error);
+    } else if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else {
+      console.log("Unhandled Error!");
+      res.status(500).send("Internal Server Error");
+    }
+  } finally {
+    client.release();
+  }
+});
