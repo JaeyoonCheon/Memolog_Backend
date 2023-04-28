@@ -6,7 +6,7 @@ import { ResponseError } from "../types";
 
 export const router = express.Router();
 
-router.get("/trend", async (req: Request, res: Response) => {
+router.get("/trends", async (req: Request, res: Response) => {
   const LIMIT = process.env.DOCUMENT_LIMIT;
 
   const client = await pool.connect();
@@ -52,7 +52,7 @@ router.get("/trend", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/frequent", async (req: Request, res: Response) => {
+router.get("/frequency", async (req: Request, res: Response) => {
   const { id: userId } = req.body.payload;
   const LIMIT = process.env.DOCUMENT_LIMIT;
 
