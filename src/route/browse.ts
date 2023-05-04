@@ -20,14 +20,38 @@ router.get("/", async (req: Request, res: Response) => {
 
     if (isFirstPage) {
       query = `
-      SELECT * FROM public.document 
+      SELECT 
+      D.ID,
+      D.TITLE,
+      D.FORM,
+      D.CREATED_AT,
+      D.UPDATED_AT,
+      D.SCOPE,
+      D.THUMBNAIL_URL,
+      D.USER_ID,
+      U.name,
+      U.profile_image_url
+      FROM PUBLIC.DOCUMENT AS D
+      LEFT JOIN PUBLIC.USER AS U ON D.USER_ID = U.ID
       WHERE user_id!=$1 AND scope='public' 
       ORDER BY created_at DESC, id LIMIT $2
       `;
       values = [userId, LIMIT];
     } else {
       query = `
-      SELECT * FROM public.document 
+      SELECT 
+      D.ID,
+      D.TITLE,
+      D.FORM,
+      D.CREATED_AT,
+      D.UPDATED_AT,
+      D.SCOPE,
+      D.THUMBNAIL_URL,
+      D.USER_ID,
+      U.name,
+      U.profile_image_url
+      FROM PUBLIC.DOCUMENT AS D
+      LEFT JOIN PUBLIC.USER AS U ON D.USER_ID = U.ID
       WHERE user_id!=$1 AND scope='public' AND created_at < $2 OR (created_at = $2 AND id > $3) 
       ORDER BY created_at DESC, id LIMIT $4
       `;
