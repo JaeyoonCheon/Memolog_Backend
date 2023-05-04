@@ -183,7 +183,7 @@ router.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
-router.post("accValidation", async (req: Request, res: Response) => {
+router.post("check-email-duplicated", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const { email } = req.body;
