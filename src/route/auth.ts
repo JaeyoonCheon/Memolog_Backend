@@ -183,10 +183,12 @@ router.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
-router.post("check-email-duplicated", async (req: Request, res: Response) => {
+router.post("/check-email-duplicated", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const { email } = req.body;
+
+    console.log(email);
 
     const result = await client.query(
       `SELECT u.email FROM public.user AS u
@@ -205,9 +207,7 @@ router.post("check-email-duplicated", async (req: Request, res: Response) => {
     res.status(200).send("Check Successful.");
   } catch (e) {
     console.log(e);
-    if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
-    } else if (e instanceof DatabaseError) {
+    if (e instanceof DatabaseError) {
       const error = new ResponseError({
         name: "ER10",
         httpCode: 500,
