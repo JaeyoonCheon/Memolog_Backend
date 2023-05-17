@@ -6,54 +6,54 @@ import pool from "../database/postgreSQL/pool";
 
 export const router = express.Router();
 
-router.get("/profile", async (req: Request, res: Response) => {
+router.get("/profile/:userId", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   const { userId } = req.params;
 
   try {
-    const client = await pool.connect();
-    const { rows } = await client.query(
-      "SELECT * FROM public.user WHERE id=$1",
+    const result = await client.query(
+      "SELECT id, nickname, profile_image_url FROM public.user WHERE id=$1",
       [userId]
     );
 
-    client.release();
-    res.send(JSON.stringify(rows[0]));
+    res.status(200).send(result.rows[0]);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
 
-// 현재 ID로 구현. 이후 jwt active token으로 변경 예정
-router.patch("/:userId/profile", async (req: Request, res: Response) => {
+router.post("/profile/:userId", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   const { userId } = req.params;
 
   try {
-    const client = await pool.connect();
+    const { nickname, profile_image_url } = req.body;
 
-    const { name, profile_image_url } = req.body;
+    console.log(nickname, profile_image_url);
 
-    // 순서 주의
-    const { rows } = await client.query(
-      "UPDATE public.user SET name=$2, profile_image_url=$3 where id=$1",
-      [userId, name, profile_image_url]
+    await client.query(
+      "UPDATE public.user SET nickname=$2, profile_image_url=$3 where id=$1",
+      [userId, nickname, profile_image_url]
     );
 
-    client.release();
-    res.send(rows);
+    res.status(200);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
+  } finally {
+    client.release();
   }
 });
 
 // 현재 ID로 구현. 이후 jwt active token으로 변경 예정
 router.patch("/:userId/pw", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   const { userId } = req.params;
 
   try {
-    const client = await pool.connect();
-
     const { password } = req.body;
 
     const oldPasswordRows = await client.query(

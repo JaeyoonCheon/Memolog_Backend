@@ -18,11 +18,10 @@ import { jwtAuth } from "./middleware/jwtAuth";
 
 app.use("/", indexRouter);
 app.use("/auth", authRouter);
-app.use(jwtAuth);
-app.use("/user", userRouter);
-app.use("/document", documentRouter);
-app.use("/browse", browseRouter);
-app.use("/stat", statRouter);
+app.use("/user", jwtAuth, userRouter);
+app.use("/document", jwtAuth, documentRouter);
+app.use("/browse", jwtAuth, browseRouter);
+app.use("/stat", jwtAuth, statRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
