@@ -25,21 +25,65 @@ router.get("/profile/:userId", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/profile/:userId", async (req: Request, res: Response) => {
+router.post("/profile", async (req: Request, res: Response) => {
   const client = await pool.connect();
-  const { userId } = req.params;
+  const { id: userId } = req.body.payload;
 
   try {
-    const { nickname, profile_image_url } = req.body;
+    const { nickname: userNickname, profile_image_url: userProfileImageUrl } =
+      req.body;
 
-    console.log(nickname, profile_image_url);
-
-    await client.query(
-      "UPDATE public.user SET nickname=$2, profile_image_url=$3 where id=$1",
-      [userId, nickname, profile_image_url]
+    const newProfileRows = await client.query(
+      `UPDATE public.user SET nickname=$2, profile_image_url=$3 WHERE id=$1
+      RETURNING nickname, profile_image_url`,
+      [userId, userNickname, userProfileImageUrl]
     );
 
-    res.status(200);
+    res.status(200).send(newProfileRows.rows[0]);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/profile/profileImage", async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  const { id: userId } = req.body.payload;
+
+  try {
+    const { profile_image_url: userProfileImageUrl } = req.body;
+
+    const newProfileRows = await client.query(
+      `UPDATE public.user SET profile_image_url=$2 WHERE id=$1
+      RETURNING profile_image_url`,
+      [userId, userProfileImageUrl]
+    );
+
+    res.status(200).send(newProfileRows.rows[0]);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Error occured!");
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/profile/nickname", async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  const { id: userId } = req.body.payload;
+
+  try {
+    const { nickname: userNickname } = req.body;
+
+    const newProfileRows = await client.query(
+      `UPDATE public.user SET nickname=$2 WHERE id=$1
+      RETURNING nickname`,
+      [userId, userNickname]
+    );
+
+    res.status(200).send(newProfileRows.rows[0]);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");

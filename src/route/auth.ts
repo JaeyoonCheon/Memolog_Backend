@@ -53,11 +53,11 @@ router.post("/token", async (req: Request, res: Response) => {
 router.post("/signin", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
-    const { email, password } = req.body;
+    const { email: userEmail, password: userPassword } = req.body;
 
     const isExistRows = await client.query(
       `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS isExist`,
-      [email]
+      [userEmail]
     );
     const isExist = isExistRows.rows[0].isExist;
 
@@ -71,10 +71,10 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     const savedPasswordRows = await client.query(
       `SELECT password FROM public.user WHERE email=$1;`,
-      [email]
+      [userEmail]
     );
     const savedPassword = savedPasswordRows.rows[0].password;
-    const compareResult = await bcrypt.compare(password, savedPassword);
+    const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
       throw new ResponseError({
         name: "ER08",
@@ -84,28 +84,24 @@ router.post("/signin", async (req: Request, res: Response) => {
     }
 
     const userRows = await client.query(
-      `SELECT * FROM public.user WHERE email=$1`,
-      [email]
+      `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE email=$1`,
+      [userEmail]
     );
-    const {
-      id: userId,
-      name,
-      email: userEmail,
-      profile_image,
-    } = userRows.rows[0];
+    const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
 
-    const { token: accessToken, expireTime } = sign(userId);
+    const { token: accessToken, expireTime } = sign(id);
     const refreshToken = refresh();
 
-    await redisClient.set(String(userId), refreshToken);
+    await redisClient.set(String(id), refreshToken);
 
     res.status(200).send({
       token: { accessToken, refreshToken, expireTime },
       user: {
-        userId,
+        userId: id,
         name,
-        userEmail,
-        profile_image,
+        userEmail: email,
+        nickname,
+        profile_image_url,
       },
     });
   } catch (e) {
@@ -133,33 +129,55 @@ router.post("/signin", async (req: Request, res: Response) => {
 router.post("/signup", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
-    const { name, email, profile_image_url = "", password } = req.body;
+    const {
+      name: userName,
+      email: userEmail,
+      password: userPassword,
+    } = req.body;
 
     //유효성 검증
 
     const hashSaltRound = Number(process.env.HASH_SALT_ROUND);
     const hashSalt = await bcrypt.genSalt(hashSaltRound);
-    const encryptedPassword = await bcrypt.hash(password, hashSalt);
+    const encryptedPassword = await bcrypt.hash(userPassword, hashSalt);
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
     const created_at = new Date(Date.now() - localeOffset);
     const updated_at = created_at;
 
-    await client.query(
+    const DEFAULT_SCOPE = "public";
+
+    const newUserRows = await client.query(
       `INSERT INTO public.user 
-      (name, email, profile_image_url, password, created_at, updated_at) 
-      values ($1, $2, $3, $4, $5, $6);`,
+      (name, email, password, created_at, updated_at, scope) 
+      values ($1, $2, $3, $4, $5, $6)
+      RETURNING id, name, email, scope;`,
       [
-        name,
-        email,
-        profile_image_url,
+        userName,
+        userEmail,
         encryptedPassword,
         created_at,
         updated_at,
+        DEFAULT_SCOPE,
       ]
     );
 
-    res.status(200).send("Data insert successfully.");
+    const { id: userId, name, email, scope } = newUserRows.rows[0];
+
+    const { token: accessToken, expireTime } = sign(userId);
+    const refreshToken = refresh();
+
+    await redisClient.set(String(userId), refreshToken);
+
+    res.status(200).send({
+      token: { accessToken, refreshToken, expireTime },
+      user: {
+        userId,
+        name,
+        email,
+        scope,
+      },
+    });
   } catch (e) {
     console.log(e);
     if (e instanceof DatabaseError) {

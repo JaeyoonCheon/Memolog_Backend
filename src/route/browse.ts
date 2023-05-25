@@ -31,10 +31,10 @@ router.get("/", async (req: Request, res: Response) => {
       D.USER_ID,
       U.name,
       U.profile_image_url
-      FROM PUBLIC.DOCUMENT AS D
-      LEFT JOIN PUBLIC.USER AS U ON D.USER_ID = U.ID
-      WHERE user_id!=$1 AND scope='public' 
-      ORDER BY created_at DESC, id LIMIT $2
+      FROM public.document AS D
+      LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
+      WHERE D.user_id!=$1 AND D.scope='public' 
+      ORDER BY D.created_at DESC, D.id LIMIT $2
       `;
       values = [userId, LIMIT];
     } else {
@@ -50,10 +50,10 @@ router.get("/", async (req: Request, res: Response) => {
       D.USER_ID,
       U.name,
       U.profile_image_url
-      FROM PUBLIC.DOCUMENT AS D
-      LEFT JOIN PUBLIC.USER AS U ON D.USER_ID = U.ID
-      WHERE user_id!=$1 AND scope='public' AND created_at < $2 OR (created_at = $2 AND id > $3) 
-      ORDER BY created_at DESC, id LIMIT $4
+      FROM public.document AS D
+      LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
+      WHERE D.user_id!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
+      ORDER BY D.created_at DESC, D.id LIMIT $4
       `;
       values = [userId, cursor, documentId, LIMIT];
     }
