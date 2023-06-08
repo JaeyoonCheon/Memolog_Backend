@@ -29,7 +29,7 @@ router.get("/", async (req: Request, res: Response) => {
       D.SCOPE,
       D.THUMBNAIL_URL,
       D.USER_ID,
-      U.name,
+      U.nickname,
       U.profile_image_url
       FROM public.document AS D
       LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
@@ -48,7 +48,7 @@ router.get("/", async (req: Request, res: Response) => {
       D.SCOPE,
       D.THUMBNAIL_URL,
       D.USER_ID,
-      U.name,
+      U.nickname,
       U.profile_image_url
       FROM public.document AS D
       LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
