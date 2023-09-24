@@ -6,7 +6,7 @@ import pool from "../database/postgreSQL/pool";
 
 export const router = express.Router();
 
-router.get("/profile/:userId", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   const client = await pool.connect();
   const { userId } = req.params;
 
@@ -25,7 +25,7 @@ router.get("/profile/:userId", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/profile", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   const client = await pool.connect();
   const { id: userId } = req.body.payload;
 
@@ -48,7 +48,7 @@ router.post("/profile", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/profile/profileImage", async (req: Request, res: Response) => {
+router.post("/profileImage", async (req: Request, res: Response) => {
   const client = await pool.connect();
   const { id: userId } = req.body.payload;
 
@@ -70,7 +70,7 @@ router.post("/profile/profileImage", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/profile/nickname", async (req: Request, res: Response) => {
+router.post("/nickname", async (req: Request, res: Response) => {
   const client = await pool.connect();
   const { id: userId } = req.body.payload;
 

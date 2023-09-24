@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import { TokenExpiredError, VerifyErrors } from "jsonwebtoken";
 
-import { verify } from "../lib/authToken/jwt";
+import { accessVerify } from "../lib/authToken/jwt";
 import { CustomError, ResponseError } from "../types";
 import { JsonWebTokenError } from "jsonwebtoken";
 
@@ -21,7 +21,7 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
       });
     }
     if (accessToken !== undefined) {
-      const payload = verify(accessToken);
+      const payload = accessVerify(accessToken);
 
       req.body.payload = payload;
 

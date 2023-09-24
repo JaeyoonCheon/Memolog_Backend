@@ -1,53 +1,66 @@
 import { promisify } from "util";
-import * as jwt from "jsonwebtoken";
+import { sign, verify, decode, Jwt, Secret } from "jsonwebtoken";
 import dotenv from "dotenv";
 import ms from "ms";
 
 import client from "../../database/redis/client";
 import { ResponseError } from "../../types";
 
-const SECRET: jwt.Secret = process.env.SALT || "";
-const ACCESS_EXPIRE: string = process.env.ACCESS_EXPIRE || "1h";
+export interface CustomJWTPayload {
+  id: number;
+}
 
-const sign = (userId: Number) => {
+export type CustomJwt = Jwt & CustomJWTPayload;
+
+const SECRET: Secret = process.env.SALT || "";
+const ACCESS_EXPIRE: string = process.env.ACCESS_EXPIRE || "1h";
+const REFRESH_EXPIRE: string = process.env.REFRESH_EXPIRE || "7d";
+
+const accessSign = (userId: number) => {
   const expireTime = new Date();
   expireTime.setTime(expireTime.getTime() + ms(ACCESS_EXPIRE));
 
-  const payload = {
+  const payload: CustomJWTPayload = {
     id: userId,
   };
 
-  return {
-    token: jwt.sign(payload, SECRET, {
-      algorithm: "HS256",
-      expiresIn: process.env.ACCESS_EXPIRE,
-    }),
-    expireTime: expireTime,
-  };
+  return sign(payload, SECRET, {
+    algorithm: "HS256",
+    expiresIn: ACCESS_EXPIRE,
+  });
 };
 
-const verify = (token: string) => {
+const refreshSign = (userId: number) => {
+  const expireTime = new Date();
+  expireTime.setTime(expireTime.getTime() + ms(ACCESS_EXPIRE));
+
+  const payload: CustomJWTPayload = {
+    id: userId,
+  };
+
+  return sign(payload, SECRET, {
+    algorithm: "HS256",
+    expiresIn: REFRESH_EXPIRE,
+  });
+};
+
+const accessVerify = (token: string) => {
   try {
-    const decodedToken = jwt.verify(token, SECRET);
-    return decodedToken;
+    const decodedPayload = verify(token, SECRET);
+    return decodedPayload;
   } catch (e) {
     throw e;
   }
 };
 
-const refresh = () => {
-  return jwt.sign({}, SECRET, {
-    algorithm: "HS256",
-    expiresIn: process.env.REFRESH_EXPIRE,
-  });
-};
-
-const refreshVerify = async (token: string, userId: Number) => {
+const refreshVerify = async (token: string) => {
   try {
-    const refreshData = await client.get(String(userId));
+    const decodedTokenPayload = decode(token) as CustomJWTPayload;
+    const { id } = decodedTokenPayload;
+    const refreshData = await client.get(String(id));
 
     if (token === refreshData) {
-      jwt.verify(token, SECRET);
+      return verify(token, SECRET) as CustomJWTPayload;
     } else {
       throw new ResponseError({
         name: "ER09",
@@ -60,4 +73,4 @@ const refreshVerify = async (token: string, userId: Number) => {
   }
 };
 
-export { sign, verify, refresh, refreshVerify };
+export { accessSign, accessVerify, refreshSign, refreshVerify };

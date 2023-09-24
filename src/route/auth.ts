@@ -1,22 +1,58 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { DatabaseError } from "pg";
+import { verify, decode, Jwt } from "jsonwebtoken";
 
 import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
-import { sign, refresh, refreshVerify } from "../lib/authToken/jwt";
+import { accessSign, refreshSign, refreshVerify } from "../lib/authToken/jwt";
 import { CustomError, ResponseError } from "../types";
 import client from "../database/redis/client";
+import { CustomJWTPayload, CustomJwt } from "../lib/authToken/jwt";
 
 export const router = express.Router();
 
-router.post("/token", async (req: Request, res: Response) => {
+router.post("/check", async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  const JWT_SALT = process.env.SALT;
+  const accessToken = req.headers.authorization?.split("Bearer ")[1];
+
+  console.log(accessToken);
+
+  try {
+    if (accessToken && JWT_SALT) {
+      const verified = verify(accessToken, JWT_SALT) as CustomJwt;
+      const userId = verified.id;
+      const newAccessToken = accessSign(userId);
+
+      const userRows = await client.query(
+        `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE id=$1`,
+        [userId]
+      );
+      const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
+
+      res.status(200).send({
+        token: {
+          newAccessToken,
+        },
+        user: {
+          id,
+          name,
+          email,
+          nickname,
+          profile_image_url,
+        },
+      });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+router.post("/refresh", async (req: Request, res: Response) => {
+  const client = await pool.connect();
   const JWT_SALT = process.env.SALT;
   const refreshToken = req.headers.authorization?.split("Bearer ")[1];
-  const { userId } = req.body;
-
-  console.log(refreshToken);
-  console.log(userId);
 
   try {
     if (JWT_SALT === undefined) {
@@ -26,13 +62,27 @@ router.post("/token", async (req: Request, res: Response) => {
       });
     }
     if (refreshToken !== undefined) {
-      await refreshVerify(refreshToken, Number(userId));
-      const { token: accessToken, expireTime } = sign(Number(userId));
+      const verifiedTokenPayload = await refreshVerify(refreshToken);
+      console.log(verifiedTokenPayload);
+      const { id: userId } = verifiedTokenPayload;
+
+      const userRows = await client.query(
+        `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE id=$1`,
+        [userId]
+      );
+      const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
+      const newAccessToken = accessSign(userId);
 
       res.status(200).send({
         token: {
-          accessToken,
-          expireTime,
+          accessToken: newAccessToken,
+        },
+        user: {
+          id,
+          name,
+          email,
+          nickname,
+          profile_image_url,
         },
       });
     }
@@ -51,15 +101,19 @@ router.post("/token", async (req: Request, res: Response) => {
 });
 
 router.post("/signin", async (req: Request, res: Response) => {
+  console.log("do signin");
   const client = await pool.connect();
   try {
     const { email: userEmail, password: userPassword } = req.body;
+
+    console.log(req.body);
 
     const isExistRows = await client.query(
       `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS isExist`,
       [userEmail]
     );
-    const isExist = isExistRows.rows[0].isExist;
+    const isExist = isExistRows.rows[0].isexist;
+    console.log(isExist);
 
     if (isExist === false) {
       throw new ResponseError({
@@ -89,17 +143,17 @@ router.post("/signin", async (req: Request, res: Response) => {
     );
     const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
 
-    const { token: accessToken, expireTime } = sign(id);
-    const refreshToken = refresh();
+    const accessToken = accessSign(id);
+    const refreshToken = refreshSign(id);
 
     await redisClient.set(String(id), refreshToken);
 
     res.status(200).send({
-      token: { accessToken, refreshToken, expireTime },
+      token: { accessToken },
       user: {
-        userId: id,
+        id,
         name,
-        userEmail: email,
+        email,
         nickname,
         profile_image_url,
       },
@@ -164,15 +218,15 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     const { id: userId, name, email, scope } = newUserRows.rows[0];
 
-    const { token: accessToken, expireTime } = sign(userId);
-    const refreshToken = refresh();
+    const accessToken = accessSign(userId);
+    const refreshToken = refreshSign(userId);
 
     await redisClient.set(String(userId), refreshToken);
 
     res.status(200).send({
-      token: { accessToken, refreshToken, expireTime },
+      token: { accessToken, refreshToken },
       user: {
-        userId,
+        id: userId,
         name,
         email,
         scope,
@@ -201,7 +255,7 @@ router.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/check-email-duplicated", async (req: Request, res: Response) => {
+router.post("/verifyemail", async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const { email } = req.body;
