@@ -7,7 +7,7 @@ import client from "../../database/redis/client";
 import { ResponseError } from "../../types";
 
 export interface CustomJWTPayload {
-  id: number;
+  userID: string;
 }
 
 export type CustomJwt = Jwt & CustomJWTPayload;
@@ -16,12 +16,12 @@ const SECRET: Secret = process.env.SALT || "";
 const ACCESS_EXPIRE: string = process.env.ACCESS_EXPIRE || "1h";
 const REFRESH_EXPIRE: string = process.env.REFRESH_EXPIRE || "7d";
 
-const accessSign = (userId: number) => {
+const accessSign = (userID: string) => {
   const expireTime = new Date();
   expireTime.setTime(expireTime.getTime() + ms(ACCESS_EXPIRE));
 
   const payload: CustomJWTPayload = {
-    id: userId,
+    userID,
   };
 
   return sign(payload, SECRET, {
@@ -30,12 +30,12 @@ const accessSign = (userId: number) => {
   });
 };
 
-const refreshSign = (userId: number) => {
+const refreshSign = (userID: string) => {
   const expireTime = new Date();
   expireTime.setTime(expireTime.getTime() + ms(ACCESS_EXPIRE));
 
   const payload: CustomJWTPayload = {
-    id: userId,
+    userID,
   };
 
   return sign(payload, SECRET, {
@@ -56,8 +56,8 @@ const accessVerify = (token: string) => {
 const refreshVerify = async (token: string) => {
   try {
     const decodedTokenPayload = decode(token) as CustomJWTPayload;
-    const { id } = decodedTokenPayload;
-    const refreshData = await client.get(String(id));
+    const { userID } = decodedTokenPayload;
+    const refreshData = await client.get(userID);
 
     if (token === refreshData) {
       return verify(token, SECRET) as CustomJWTPayload;

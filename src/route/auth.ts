@@ -1,35 +1,29 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { DatabaseError } from "pg";
-import { verify, decode, Jwt } from "jsonwebtoken";
+import { verify } from "jsonwebtoken";
+import { randomUUID } from "crypto";
 
-import pool from "../database/postgreSQL/pool";
 import redisClient from "../database/redis/client";
 import { accessSign, refreshSign, refreshVerify } from "../lib/authToken/jwt";
 import { CustomError, ResponseError } from "../types";
-import client from "../database/redis/client";
-import { CustomJWTPayload, CustomJwt } from "../lib/authToken/jwt";
+import { CustomJwt } from "../lib/authToken/jwt";
+import * as userModel from "../model/user";
 
 export const router = express.Router();
 
 router.post("/check", async (req: Request, res: Response) => {
-  const client = await pool.connect();
   const JWT_SALT = process.env.SALT;
   const accessToken = req.headers.authorization?.split("Bearer ")[1];
-
-  console.log(accessToken);
 
   try {
     if (accessToken && JWT_SALT) {
       const verified = verify(accessToken, JWT_SALT) as CustomJwt;
-      const userId = verified.id;
-      const newAccessToken = accessSign(userId);
+      const userID = verified.userID;
+      const newAccessToken = accessSign(userID);
 
-      const userRows = await client.query(
-        `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE id=$1`,
-        [userId]
-      );
-      const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
+      const userRows = await userModel.readUserByUserID(userID);
+      const { id, name, email, nickname, profile_image_url } = userRows;
 
       res.status(200).send({
         token: {
@@ -50,7 +44,6 @@ router.post("/check", async (req: Request, res: Response) => {
 });
 
 router.post("/refresh", async (req: Request, res: Response) => {
-  const client = await pool.connect();
   const JWT_SALT = process.env.SALT;
   const refreshToken = req.headers.authorization?.split("Bearer ")[1];
 
@@ -62,16 +55,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
       });
     }
     if (refreshToken !== undefined) {
-      const verifiedTokenPayload = await refreshVerify(refreshToken);
-      console.log(verifiedTokenPayload);
-      const { id: userId } = verifiedTokenPayload;
+      const verifiedRefresh = await refreshVerify(refreshToken);
+      const { userID } = verifiedRefresh;
 
-      const userRows = await client.query(
-        `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE id=$1`,
-        [userId]
-      );
-      const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
-      const newAccessToken = accessSign(userId);
+      const userRows = await userModel.readUserByUserID(userID);
+      const { id, name, email, nickname, profile_image_url } = userRows;
+      const newAccessToken = accessSign(userID);
 
       res.status(200).send({
         token: {
@@ -101,21 +90,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
 });
 
 router.post("/signin", async (req: Request, res: Response) => {
-  console.log("do signin");
-  const client = await pool.connect();
   try {
     const { email: userEmail, password: userPassword } = req.body;
 
-    console.log(req.body);
+    const existRows = await userModel.verifyEmail(userEmail);
 
-    const isExistRows = await client.query(
-      `SELECT EXISTS (SELECT * FROM public.user WHERE email=$1) AS isExist`,
-      [userEmail]
-    );
-    const isExist = isExistRows.rows[0].isexist;
-    console.log(isExist);
-
-    if (isExist === false) {
+    if (existRows > 0) {
       throw new ResponseError({
         name: "ER08",
         httpCode: 400,
@@ -123,11 +103,8 @@ router.post("/signin", async (req: Request, res: Response) => {
       });
     }
 
-    const savedPasswordRows = await client.query(
-      `SELECT password FROM public.user WHERE email=$1;`,
-      [userEmail]
-    );
-    const savedPassword = savedPasswordRows.rows[0].password;
+    const savedPassword = await userModel.readPassword(userEmail);
+
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
       throw new ResponseError({
@@ -137,25 +114,35 @@ router.post("/signin", async (req: Request, res: Response) => {
       });
     }
 
-    const userRows = await client.query(
-      `SELECT id, name, email, nickname, profile_image_url FROM public.user WHERE email=$1`,
-      [userEmail]
-    );
-    const { id, name, email, nickname, profile_image_url } = userRows.rows[0];
+    const userRows = await userModel.readUserByEmail(userEmail);
+    const {
+      id,
+      name,
+      email,
+      nickname,
+      profile_image_url,
+      created_at,
+      updated_at,
+      scope,
+      user_identifier,
+    } = userRows;
 
-    const accessToken = accessSign(id);
-    const refreshToken = refreshSign(id);
+    const accessToken = accessSign(user_identifier);
+    const refreshToken = refreshSign(user_identifier);
 
     await redisClient.set(String(id), refreshToken);
 
     res.status(200).send({
       token: { accessToken },
       user: {
-        id,
         name,
         email,
         nickname,
         profile_image_url,
+        created_at,
+        updated_at,
+        scope,
+        user_identifier,
       },
     });
   } catch (e) {
@@ -172,21 +159,18 @@ router.post("/signin", async (req: Request, res: Response) => {
     } else if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
     } else {
-      console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
     }
-  } finally {
-    client.release();
   }
 });
 
 router.post("/signup", async (req: Request, res: Response) => {
-  const client = await pool.connect();
   try {
     const {
       name: userName,
       email: userEmail,
       password: userPassword,
+      scope: userScope,
     } = req.body;
 
     //유효성 검증
@@ -196,40 +180,51 @@ router.post("/signup", async (req: Request, res: Response) => {
     const encryptedPassword = await bcrypt.hash(userPassword, hashSalt);
 
     const localeOffset = new Date().getTimezoneOffset() * 60000;
-    const created_at = new Date(Date.now() - localeOffset);
-    const updated_at = created_at;
+    const createdTime = new Date(Date.now() - localeOffset);
+    const updatedTime = createdTime;
 
     const DEFAULT_SCOPE = "public";
 
-    const newUserRows = await client.query(
-      `INSERT INTO public.user 
-      (name, email, password, created_at, updated_at, scope) 
-      values ($1, $2, $3, $4, $5, $6)
-      RETURNING id, name, email, scope;`,
-      [
-        userName,
-        userEmail,
-        encryptedPassword,
-        created_at,
-        updated_at,
-        DEFAULT_SCOPE,
-      ]
-    );
+    const uuidForUserID = randomUUID();
 
-    const { id: userId, name, email, scope } = newUserRows.rows[0];
+    const newUser = await userModel.createUser({
+      name: userName,
+      email: userEmail,
+      password: encryptedPassword,
+      created_at: createdTime.getTime(),
+      updated_at: updatedTime.getTime(),
+      scope: userScope ?? DEFAULT_SCOPE,
+      user_identifier: uuidForUserID,
+    });
 
-    const accessToken = accessSign(userId);
-    const refreshToken = refreshSign(userId);
+    const userRows = await userModel.readUserByID(newUser);
+    const {
+      id,
+      name,
+      email,
+      nickname,
+      profile_image_url,
+      created_at,
+      updated_at,
+      scope,
+      user_identifier,
+    } = userRows;
+    const accessToken = accessSign(user_identifier);
+    const refreshToken = refreshSign(user_identifier);
 
-    await redisClient.set(String(userId), refreshToken);
+    await redisClient.set(user_identifier, refreshToken);
 
     res.status(200).send({
       token: { accessToken, refreshToken },
       user: {
-        id: userId,
         name,
         email,
+        nickname,
+        profile_image_url,
+        created_at,
+        updated_at,
         scope,
+        user_identifier,
       },
     });
   } catch (e) {
@@ -242,7 +237,6 @@ router.post("/signup", async (req: Request, res: Response) => {
       });
       res.status(500).send(error);
     } else {
-      console.log("Unhandled Error!");
       const error = new ResponseError({
         name: "ER00",
         httpCode: 500,
@@ -250,25 +244,16 @@ router.post("/signup", async (req: Request, res: Response) => {
       });
       res.status(500).send(error);
     }
-  } finally {
-    client.release();
   }
 });
 
-router.post("/verifyemail", async (req: Request, res: Response) => {
-  const client = await pool.connect();
+router.post("/verify-email", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    console.log(email);
+    const result = await userModel.verifyEmail(email);
 
-    const result = await client.query(
-      `SELECT u.email FROM public.user AS u
-      WHERE u.email=$1;`,
-      [email]
-    );
-
-    if (result.rowCount > 0) {
+    if (result > 0) {
       throw new ResponseError({
         name: "ER11",
         httpCode: 400,
@@ -276,7 +261,7 @@ router.post("/verifyemail", async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200).send("Check Successful.");
+    res.status(200);
   } catch (e) {
     console.log(e);
     if (e instanceof DatabaseError) {
@@ -292,7 +277,5 @@ router.post("/verifyemail", async (req: Request, res: Response) => {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
     }
-  } finally {
-    client.release();
   }
 });
