@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import ms from "ms";
 
 import client from "../../database/redis/client";
-import { ResponseError } from "../../types";
+import { ResponseError } from "../wrapper/error";
 
 export interface CustomJWTPayload {
   userID: string;

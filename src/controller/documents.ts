@@ -1,4 +1,4 @@
-import pool from "../database/postgreSQL/pool";
+import pool from "@/database/postgreSQL/pool";
 
 export const addHashtag = async (name: string) => {
   const client = await pool.connect();

@@ -3,8 +3,8 @@ declare module "user" {
     name: string;
     email: string;
     password: string;
-    created_at: number;
-    updated_at: number;
+    created_at: Date;
+    updated_at: Date;
     scope: number;
     user_identifier: string;
   }
@@ -16,8 +16,8 @@ declare module "user" {
     name: string;
     email: string;
     profile_image_url: string | null;
-    created_at: number;
-    updated_at: number;
+    created_at: Date;
+    updated_at: Date;
     nickname: string;
     scope: string;
     user_identifier: string;

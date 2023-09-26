@@ -1,121 +1,90 @@
 import { Request, Response } from "express";
-
 import express from "express";
+import { DatabaseError } from "pg";
 
-import pool from "../database/postgreSQL/pool";
+import * as userModel from "@/model/user";
 
 export const router = express.Router();
 
 router.get("/", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  const { userId } = req.params;
+  const { user_identifier } = req.params;
 
   try {
-    const result = await client.query(
-      "SELECT id, nickname, profile_image_url FROM public.user WHERE id=$1",
-      [userId]
-    );
+    const result = await userModel.readUserByUserID(user_identifier);
 
-    res.status(200).send(result.rows[0]);
+    res.status(200).send(result);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
-  } finally {
-    client.release();
   }
 });
 
-router.post("/", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  const { id: userId } = req.body.payload;
+router.post("/profile", async (req: Request, res: Response) => {
+  const { userID } = req.body.payload;
 
   try {
-    const { nickname: userNickname, profile_image_url: userProfileImageUrl } =
-      req.body;
+    const { nickname, profile_image_url } = req.body;
 
-    const newProfileRows = await client.query(
-      `UPDATE public.user SET nickname=$2, profile_image_url=$3 WHERE id=$1
-      RETURNING nickname, profile_image_url`,
-      [userId, userNickname, userProfileImageUrl]
+    const newProfile = await userModel.updateProfile(
+      userID,
+      nickname,
+      profile_image_url
     );
 
-    res.status(200).send(newProfileRows.rows[0]);
+    res.status(200);
   } catch (e) {
     console.log(e);
+    console.log(e instanceof DatabaseError);
     res.status(500).send("Error occured!");
-  } finally {
-    client.release();
   }
 });
 
 router.post("/profileImage", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  const { id: userId } = req.body.payload;
+  const { userID } = req.body.payload;
 
   try {
-    const { profile_image_url: userProfileImageUrl } = req.body;
+    const { profile_image_url } = req.body;
 
-    const newProfileRows = await client.query(
-      `UPDATE public.user SET profile_image_url=$2 WHERE id=$1
-      RETURNING profile_image_url`,
-      [userId, userProfileImageUrl]
+    const newProfile = await userModel.updateProfileImageURL(
+      userID,
+      profile_image_url
     );
 
-    res.status(200).send(newProfileRows.rows[0]);
+    res.status(200);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
-  } finally {
-    client.release();
   }
 });
 
 router.post("/nickname", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  const { id: userId } = req.body.payload;
+  const { userID } = req.body.payload;
 
   try {
-    const { nickname: userNickname } = req.body;
+    const { nickname } = req.body;
 
-    const newProfileRows = await client.query(
-      `UPDATE public.user SET nickname=$2 WHERE id=$1
-      RETURNING nickname`,
-      [userId, userNickname]
-    );
+    const newProfile = await userModel.updateNickname(userID, nickname);
 
-    res.status(200).send(newProfileRows.rows[0]);
+    res.status(200);
   } catch (e) {
     console.log(e);
     res.status(500).send("Error occured!");
-  } finally {
-    client.release();
   }
 });
 
-// 현재 ID로 구현. 이후 jwt active token으로 변경 예정
-router.patch("/:userId/pw", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  const { userId } = req.params;
+router.post("/password", async (req: Request, res: Response) => {
+  const { userID } = req.body.payload;
 
   try {
-    const { password } = req.body;
+    const { old_password, new_password } = req.body;
 
-    const oldPasswordRows = await client.query(
-      "SELECT password FROM public.user WHERE id=$1",
-      [userId]
-    );
-    const oldPassword = oldPasswordRows.rows[0].password;
+    const storedOldPassword = await userModel.readPasswordByUserID(userID);
 
-    if (password === oldPassword) {
-      // 순서 주의
-      const profileRows = await client.query(
-        "UPDATE public.user SET name=$2, profile_image_url=$3 where id=$1",
-        [password]
-      );
-      const profile = profileRows.rows[0];
+    if (storedOldPassword === old_password) {
+      const result = await userModel.updatePassword(userID, new_password);
+      const profile = result;
 
-      client.release();
-      res.send(profile);
+      res.status(200).send(profile);
     } else {
       throw new Error("New password is same to old one!");
     }
@@ -125,15 +94,12 @@ router.patch("/:userId/pw", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:userId", async (req: Request, res: Response) => {
-  const { userId } = req.params;
+router.delete("/", async (req: Request, res: Response) => {
+  const { userID } = req.body.payload;
 
   try {
-    const client = await pool.connect();
+    await userModel.deletePassword(userID);
 
-    await client.query("DELETE public.user where id=$1", [userId]);
-
-    client.release();
     res.status(200).send("Data delete successfully.");
   } catch (e) {
     console.log(e);

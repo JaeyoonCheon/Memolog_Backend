@@ -4,11 +4,11 @@ import { DatabaseError } from "pg";
 import { verify } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
-import redisClient from "../database/redis/client";
-import { accessSign, refreshSign, refreshVerify } from "../lib/authToken/jwt";
-import { CustomError, ResponseError } from "../types";
-import { CustomJwt } from "../lib/authToken/jwt";
-import * as userModel from "../model/user";
+import redisClient from "@/database/redis/client";
+import { accessSign, refreshSign, refreshVerify } from "@/lib/authToken/jwt";
+import { CustomError, ResponseError } from "@/lib/wrapper/error";
+import { CustomJwt } from "@/lib/authToken/jwt";
+import * as userModel from "@/model/user";
 
 export const router = express.Router();
 
@@ -103,7 +103,7 @@ router.post("/signin", async (req: Request, res: Response) => {
       });
     }
 
-    const savedPassword = await userModel.readPassword(userEmail);
+    const savedPassword = await userModel.readPasswordByEmail(userEmail);
 
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
@@ -191,8 +191,8 @@ router.post("/signup", async (req: Request, res: Response) => {
       name: userName,
       email: userEmail,
       password: encryptedPassword,
-      created_at: createdTime.getTime(),
-      updated_at: updatedTime.getTime(),
+      created_at: createdTime,
+      updated_at: updatedTime,
       scope: userScope ?? DEFAULT_SCOPE,
       user_identifier: uuidForUserID,
     });

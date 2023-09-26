@@ -1,8 +1,8 @@
 import express, { Request, Response } from "express";
 import { DatabaseError } from "pg";
 
-import pool from "../database/postgreSQL/pool";
-import { ResponseError } from "../types";
+import pool from "@/database/postgreSQL/pool";
+import { ResponseError } from "@/lib/wrapper/error";
 
 export const router = express.Router();
 
