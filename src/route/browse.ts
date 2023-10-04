@@ -3,97 +3,75 @@ import { DatabaseError } from "pg";
 
 import pool from "@/database/postgreSQL/pool";
 import { ResponseError } from "@/lib/wrapper/error";
+import * as browseModel from "@model/browse";
 
 export const router = express.Router();
 
-router.get("/", async (req: Request, res: Response) => {
-  const client = await pool.connect();
-  try {
-    const { id: userId } = req.body.payload;
-    const { id: documentId, cursor } = req.query;
-    const LIMIT = process.env.DOCUMENT_LIMIT;
+interface BrowseQuery {
+  id?: number;
+  cursor?: string;
+}
 
-    const isFirstPage = documentId ? false : true;
+router.get(
+  "/",
+  async (req: Request<any, any, any, BrowseQuery>, res: Response) => {
+    const client = await pool.connect();
+    try {
+      const { userID } = req.body.payload;
+      const { id, cursor } = req.query;
+      const limit = Number(process.env.DOCUMENT_LIMIT);
 
-    let query = "";
-    let values = [];
+      const isFirstPage = !!id;
 
-    if (isFirstPage) {
-      query = `
-      SELECT 
-      D.ID,
-      D.TITLE,
-      D.FORM,
-      D.CREATED_AT,
-      D.UPDATED_AT,
-      D.SCOPE,
-      D.THUMBNAIL_URL,
-      D.USER_ID,
-      U.nickname,
-      U.profile_image_url
-      FROM public.document AS D
-      LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
-      WHERE D.user_id!=$1 AND D.scope='public' 
-      ORDER BY D.created_at DESC, D.id LIMIT $2
-      `;
-      values = [userId, LIMIT];
-    } else {
-      query = `
-      SELECT 
-      D.ID,
-      D.TITLE,
-      D.FORM,
-      D.CREATED_AT,
-      D.UPDATED_AT,
-      D.SCOPE,
-      D.THUMBNAIL_URL,
-      D.USER_ID,
-      U.nickname,
-      U.profile_image_url
-      FROM public.document AS D
-      LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
-      WHERE D.user_id!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
-      ORDER BY D.created_at DESC, D.id LIMIT $4
-      `;
-      values = [userId, cursor, documentId, LIMIT];
-    }
+      let documents = null;
 
-    if (!isFirstPage && !cursor) {
-      throw new ResponseError({
-        name: "ER02",
-        httpCode: 400,
-        message: "Wrong parameter",
+      if (isFirstPage) {
+        documents = await browseModel.browseFirstQuery({
+          userID,
+          limit,
+        });
+      } else {
+        if (!cursor || !id) {
+          throw new ResponseError({
+            name: "ER04",
+            httpCode: 400,
+            message: "wrong params",
+          });
+        }
+        documents = await browseModel.browseQuery({
+          userID,
+          limit,
+          cursor,
+          id,
+        });
+      }
+
+      const previewDocuments = documents.map((doc) => {
+        return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
       });
+
+      res.send(previewDocuments);
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        res.status(e.httpCode).send(e);
+      } else if (e instanceof DatabaseError) {
+        const error = new ResponseError({
+          name: "ER10",
+          httpCode: 500,
+          message: "Internal Server Error",
+        });
+        res.status(500).send(error);
+      } else {
+        console.log("Unhandled Error!");
+        const error = new ResponseError({
+          name: "ER00",
+          httpCode: 500,
+          message: "Internal Server Error",
+        });
+        res.status(500).send(error);
+      }
+    } finally {
+      client.release();
     }
-
-    const documentsRows = await client.query({ text: query, values: values });
-    const documents = documentsRows.rows;
-
-    const previewDocuments = documents.map((doc) => {
-      return { ...doc, form: doc.form.replace(/(<([^>]+)>)/gi, "") };
-    });
-
-    res.send(previewDocuments);
-  } catch (e) {
-    if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
-    } else if (e instanceof DatabaseError) {
-      const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
-      });
-      res.status(500).send(error);
-    } else {
-      console.log("Unhandled Error!");
-      const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
-      });
-      res.status(500).send(error);
-    }
-  } finally {
-    client.release();
   }
-});
+);
