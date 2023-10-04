@@ -77,10 +77,10 @@ router.post("/refresh", async (req: Request, res: Response) => {
     }
   } catch (e) {
     console.log(e);
-    if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
-    } else if (e instanceof ResponseError) {
+    if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
+    } else if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
     } else {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
@@ -95,7 +95,7 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     const existRows = await userModel.verifyEmail(userEmail);
 
-    if (existRows > 0) {
+    if (existRows === 0) {
       throw new ResponseError({
         name: "ER08",
         httpCode: 400,
@@ -110,7 +110,7 @@ router.post("/signin", async (req: Request, res: Response) => {
       throw new ResponseError({
         name: "ER08",
         httpCode: 400,
-        message: "Invalid Email or Password",
+        message: "Wrong Email or Password",
       });
     }
 
@@ -147,9 +147,7 @@ router.post("/signin", async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.log(e);
-    if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
-    } else if (e instanceof DatabaseError) {
+    if (e instanceof DatabaseError) {
       const error = new ResponseError({
         name: "ER10",
         httpCode: 500,
@@ -158,6 +156,8 @@ router.post("/signin", async (req: Request, res: Response) => {
       res.status(500).send(error);
     } else if (e instanceof ResponseError) {
       res.status(e.httpCode).send(e);
+    } else if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
     } else {
       res.status(500).send("Internal Server Error");
     }

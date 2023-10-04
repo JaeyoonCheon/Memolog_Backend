@@ -58,6 +58,8 @@ export async function readPasswordByEmail(email: string): Promise<string> {
 
   const result = await pool.query<ReadPassword>(query, [email]);
 
+  console.log(result);
+
   return result.rows[0].password;
 }
 export async function readPasswordByUserID(userID: string): Promise<string> {
@@ -103,7 +105,7 @@ export async function updatePassword(userID: string, password: string) {
   return result.rows[0];
 }
 export async function verifyEmail(email: string): Promise<number> {
-  const query = `SELECT COUNT(*) as count FROM public.user WHERE email=$1;`;
+  const query = `SELECT COUNT(*)::int FROM public.user WHERE email=$1;`;
 
   const result = await pool.query<VerifyEmail>(query, [email]);
 
