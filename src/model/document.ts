@@ -81,7 +81,7 @@ export async function readDocumentsQuery(
   // format for dynamic identifier
   const query = format(
     `SELECT * FROM public.document 
-    WHERE user_id = $1 AND %I < $2 OR (%I = $2 AND id > $3)
+    WHERE user_identifier = $1 AND %I < $2 OR (%I = $2 AND id > $3)
     ORDER BY %I %s, id LIMIT $4`,
     sort,
     sort,
@@ -103,7 +103,7 @@ export async function readDocument(id: number): Promise<Document> {
 }
 
 export async function readHashtags(id: number): Promise<Hashtag[]> {
-  const query = `SELECT H.name
+  const query = `SELECT H.id, H.name
   FROM public.document D 
   LEFT JOIN public.document_hashtag DH ON D.id=DH.doc_id 
   LEFT JOIN public.hashtag H ON DH.hash_id=H.id

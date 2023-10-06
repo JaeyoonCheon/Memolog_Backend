@@ -15,7 +15,6 @@ interface BrowseQuery {
 router.get(
   "/",
   async (req: Request<any, any, any, BrowseQuery>, res: Response) => {
-    const client = await pool.connect();
     try {
       const { userID } = req.body.payload;
       const { id, cursor } = req.query;
@@ -70,8 +69,6 @@ router.get(
         });
         res.status(500).send(error);
       }
-    } finally {
-      client.release();
     }
   }
 );

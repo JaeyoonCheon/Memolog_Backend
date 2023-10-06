@@ -25,14 +25,18 @@ router.get(
     try {
       const { userID } = req.body.payload;
       const { id, cursor, sort, order } = req.query;
+
+      console.log(req.query);
       const limit = Number(process.env.DOCUMENT_LIMIT);
 
       if (!limit) {
         return;
       }
 
-      const isFirstPage = !!id;
+      const isFirstPage = !id;
       let documents = null;
+
+      console.log(isFirstPage);
 
       if (isFirstPage) {
         documents = await documentModel.readDocumentsFirstQuery({
@@ -177,11 +181,11 @@ router.get(
     try {
       const document = await documentModel.readDocument(id);
       const hashtags = await documentModel.readHashtags(id);
-      const fiteredHashtags = hashtags
-        .flat()
-        .filter((hashtag) => hashtag !== null);
+      const filteredHashtags = hashtags.filter(
+        (hashtag) => hashtag.id !== null
+      );
 
-      const newDocument = { hashtags: fiteredHashtags, ...document };
+      const newDocument = { hashtags: filteredHashtags, ...document };
 
       res.send(newDocument);
     } catch (e) {

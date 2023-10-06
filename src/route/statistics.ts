@@ -6,7 +6,7 @@ import { ResponseError } from "@/lib/wrapper/error";
 
 export const router = express.Router();
 
-router.get("/trends", async (req: Request, res: Response) => {
+router.get("/hashtag-trends", async (req: Request, res: Response) => {
   const LIMIT = process.env.DOCUMENT_LIMIT;
 
   const client = await pool.connect();
