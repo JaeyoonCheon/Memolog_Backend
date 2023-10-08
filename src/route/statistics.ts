@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { DatabaseError } from "pg";
 
 import pool from "@/database/postgreSQL/pool";
-import { ResponseError } from "@/lib/wrapper/error";
+import { ResponseError } from "@wrappers/error";
 
 export const router = express.Router();
 

@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 
-import { accessVerify } from "@/lib/authToken/jwt";
-import { CustomError, ResponseError } from "@/lib/wrapper/error";
+import { accessVerify } from "@lib/authToken/jwt";
+import { CustomError, ResponseError } from "@wrappers/error";
 
 dotenv.config();
 

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import ms from "ms";
 
 import client from "../../database/redis/client";
-import { ResponseError } from "../wrapper/error";
+import { ResponseError } from "../../wrappers/error";
 
 export interface CustomJWTPayload {
   userID: string;
@@ -55,7 +55,9 @@ const accessVerify = (token: string) => {
 
 const refreshVerify = async (token: string) => {
   try {
+    console.log(token);
     const decodedTokenPayload = decode(token) as CustomJWTPayload;
+    console.log(decodedTokenPayload);
     const { userID } = decodedTokenPayload;
     const refreshData = await client.get(userID);
 

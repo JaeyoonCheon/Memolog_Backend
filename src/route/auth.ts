@@ -4,11 +4,11 @@ import { DatabaseError } from "pg";
 import { verify } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
-import redisClient from "@/database/redis/client";
-import { accessSign, refreshSign, refreshVerify } from "@/lib/authToken/jwt";
-import { CustomError, ResponseError } from "@/lib/wrapper/error";
-import { CustomJwt } from "@/lib/authToken/jwt";
-import * as userModel from "@/model/user";
+import redisClient from "@database/redis/client";
+import { accessSign, refreshSign, refreshVerify } from "@lib/authToken/jwt";
+import { CustomError, ResponseError } from "@wrappers/error";
+import { CustomJwt } from "@lib/authToken/jwt";
+import * as userModel from "@model/user";
 
 export const router = express.Router();
 
@@ -40,12 +40,23 @@ router.post("/check", async (req: Request, res: Response) => {
     }
   } catch (e) {
     console.error(e);
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      console.log("Unhandled Error!");
+      res.status(500).send("Internal Server Error");
+      return;
+    }
   }
 });
 
 router.post("/refresh", async (req: Request, res: Response) => {
   const JWT_SALT = process.env.SALT;
   const refreshToken = req.headers.authorization?.split("Bearer ")[1];
+
+  console.log(`Route refresh : ${refreshToken}`);
 
   try {
     if (JWT_SALT === undefined) {
@@ -72,6 +83,42 @@ router.post("/refresh", async (req: Request, res: Response) => {
           email,
           nickname,
           profile_image_url,
+        },
+      });
+    }
+  } catch (e) {
+    console.log(e);
+    if (e instanceof ResponseError) {
+      res.status(e.httpCode).send(e);
+    } else if (e instanceof CustomError) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      console.log("Unhandled Error!");
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+  }
+});
+
+router.post("/renew-refresh", async (req: Request, res: Response) => {
+  const JWT_SALT = process.env.SALT;
+  const token = req.headers.authorization?.split("Bearer ")[1];
+
+  try {
+    if (JWT_SALT === undefined) {
+      throw new CustomError({
+        name: "WrongSecureCode",
+        message: "Wrong operation JWT token secure",
+      });
+    }
+    if (token !== undefined) {
+      const verifiedRefresh = await refreshVerify(token);
+      const { userID } = verifiedRefresh;
+      const newRefreshToken = refreshSign(userID);
+
+      res.status(200).send({
+        token: {
+          refreshToken: newRefreshToken,
         },
       });
     }

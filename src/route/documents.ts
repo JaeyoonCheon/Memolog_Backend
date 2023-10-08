@@ -1,14 +1,14 @@
 import express, { Request, Response } from "express";
 import { DatabaseError } from "pg";
 
-import pool from "@/database/postgreSQL/pool";
+import pool from "@database/postgreSQL/pool";
 import {
   addHashtag,
   addDocumentHashtag,
   addHashtagLog,
-} from "@/controller/documents";
+} from "@controller/documents";
 import * as documentModel from "@model/document";
-import { ResponseError } from "@/lib/wrapper/error";
+import { ResponseError } from "@wrappers/error";
 
 export const router = express.Router();
 
