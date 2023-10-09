@@ -1,26 +1,19 @@
-export class CustomError extends Error {
-  name: string;
-
-  constructor({ name, message }: { name: string; message: string }) {
-    super(message);
-    this.name = name;
-  }
-}
-
-export class ResponseError extends CustomError {
-  httpCode: number;
+export class ResponseError {
+  httpStatusCode: number;
+  errorCode?: number;
+  message?: string;
 
   constructor({
-    name,
+    httpStatusCode,
+    errorCode,
     message,
-    httpCode,
   }: {
-    name: string;
-    message: string;
-    httpCode: number;
+    httpStatusCode: number;
+    errorCode?: number;
+    message?: string;
   }) {
-    super({ name, message });
-    this.name = name;
-    this.httpCode = httpCode;
+    this.httpStatusCode = httpStatusCode;
+    this.errorCode = errorCode;
+    this.message = message;
   }
 }

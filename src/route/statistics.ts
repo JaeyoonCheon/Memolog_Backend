@@ -30,20 +30,15 @@ router.get("/hashtag-trends", async (req: Request, res: Response) => {
     res.status(200).json(stat);
   } catch (e) {
     if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
+      res.status(e.httpStatusCode).send(e);
     } else if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
-      console.log("Unhandled Error!");
       const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     }
@@ -80,20 +75,16 @@ router.get("/frequency", async (req: Request, res: Response) => {
     res.status(200).json(stat);
   } catch (e) {
     if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
+      res.status(e.httpStatusCode).send(e);
     } else if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
       console.log("Unhandled Error!");
       const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     }

@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 
-import { accessVerify } from "@lib/authToken/jwt";
-import { CustomError, ResponseError } from "@wrappers/error";
+import { accessVerify } from "@lib/jwt";
+import { ResponseError } from "@wrappers/error";
 
 dotenv.config();
 
@@ -14,10 +14,7 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
   console.log(accessToken);
   try {
     if (JWT_SALT === undefined) {
-      throw new CustomError({
-        name: "WrongSecureCode",
-        message: "Wrong operation JWT token secure",
-      });
+      throw new Error("No JWT salt");
     }
     if (accessToken !== undefined) {
       const payload = accessVerify(accessToken);
@@ -27,8 +24,8 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
       next();
     } else {
       throw new ResponseError({
-        name: "ER03",
-        httpCode: 401,
+        httpStatusCode: 401,
+        errorCode: 2000,
         message: "No Access Token",
       });
     }
@@ -36,34 +33,26 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     console.error(e);
     console.log(e);
     console.dir(e);
-    if (e instanceof CustomError) {
-      const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
-      });
-      res.status(500).send(error);
-    } else if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
+    if (e instanceof ResponseError) {
+      res.status(e.httpStatusCode).send(e);
     } else if (e instanceof TokenExpiredError) {
       const error = new ResponseError({
-        name: "ER04",
+        httpStatusCode: 401,
+        errorCode: 2001,
         message: e.message,
-        httpCode: 401,
       });
-      res.status(error.httpCode).send(error);
+      res.status(error.httpStatusCode).send(error);
     } else if (e instanceof JsonWebTokenError) {
       const error = new ResponseError({
-        name: "ER09",
+        httpStatusCode: 401,
+        errorCode: 2007,
         message: e.message,
-        httpCode: 400,
       });
-      res.status(error.httpCode).send(error);
+      res.status(error.httpStatusCode).send(error);
     } else {
       console.log("Unhandled Error!");
       const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
+        httpStatusCode: 500,
         message: "Internal Server Error",
       });
       res.status(500).send(error);

@@ -48,8 +48,8 @@ router.get(
       } else {
         if (!cursor || !id) {
           throw new ResponseError({
-            name: "ER04",
-            httpCode: 400,
+            httpStatusCode: 400,
+            errorCode: 1201,
             message: "wrong params",
           });
         }
@@ -71,20 +71,16 @@ router.get(
     } catch (e) {
       console.log(e);
       if (e instanceof ResponseError) {
-        res.status(e.httpCode).send(e);
+        res.status(e.httpStatusCode).send(e);
       } else if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       }
@@ -111,8 +107,8 @@ router.get(
     try {
       if (!keyword || typeof keyword !== "string") {
         throw new ResponseError({
-          name: "ER02",
-          httpCode: 400,
+          httpStatusCode: 400,
+          errorCode: 1202,
           message: "Wrong keyword",
         });
       }
@@ -131,8 +127,8 @@ router.get(
       } else {
         if (!cursor || !id) {
           throw new ResponseError({
-            name: "ER04",
-            httpCode: 400,
+            httpStatusCode: 400,
+            errorCode: 1201,
             message: "wrong params",
           });
         }
@@ -152,19 +148,17 @@ router.get(
       res.send(previewDocuments);
     } catch (e) {
       if (e instanceof ResponseError) {
-        res.status(e.httpCode).send(e);
+        res.status(e.httpStatusCode).send(e);
       } else if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
+          httpStatusCode: 500,
           message: "Internal Server Error",
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
+          httpStatusCode: 500,
           message: "Internal Server Error",
         });
         res.status(500).send(error);
@@ -192,17 +186,13 @@ router.get(
       console.log(e);
       if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       }
@@ -247,17 +237,13 @@ router.post("/", async (req: Request, res: Response) => {
     console.log(e);
     if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
       console.log("Unhandled Error!");
       const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     }
@@ -307,17 +293,13 @@ router.post(
       console.log(e);
       if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       }
@@ -339,17 +321,13 @@ router.delete(
       console.log(e);
       if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       }

@@ -3,8 +3,8 @@ import { sign, verify, decode, Jwt, Secret } from "jsonwebtoken";
 import dotenv from "dotenv";
 import ms from "ms";
 
-import client from "../../database/redis/client";
-import { ResponseError } from "../../wrappers/error";
+import client from "../database/redis/client";
+import { ResponseError } from "../wrappers/error";
 
 export interface CustomJWTPayload {
   userID: string;
@@ -45,33 +45,25 @@ const refreshSign = (userID: string) => {
 };
 
 const accessVerify = (token: string) => {
-  try {
-    const decodedPayload = verify(token, SECRET);
-    return decodedPayload;
-  } catch (e) {
-    throw e;
-  }
+  const decodedPayload = verify(token, SECRET);
+  return decodedPayload;
 };
 
 const refreshVerify = async (token: string) => {
-  try {
-    console.log(token);
-    const decodedTokenPayload = decode(token) as CustomJWTPayload;
-    console.log(decodedTokenPayload);
-    const { userID } = decodedTokenPayload;
-    const refreshData = await client.get(userID);
+  console.log(token);
+  const decodedTokenPayload = decode(token) as CustomJWTPayload;
+  console.log(decodedTokenPayload);
+  const { userID } = decodedTokenPayload;
+  const refreshData = await client.get(userID);
 
-    if (token === refreshData) {
-      return verify(token, SECRET) as CustomJWTPayload;
-    } else {
-      throw new ResponseError({
-        name: "ER09",
-        message: "Token data error",
-        httpCode: 400,
-      });
-    }
-  } catch (e) {
-    throw e;
+  if (token === refreshData) {
+    return verify(token, SECRET) as CustomJWTPayload;
+  } else {
+    throw new ResponseError({
+      httpStatusCode: 401,
+      errorCode: 2003,
+      message: "Token data error",
+    });
   }
 };
 

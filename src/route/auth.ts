@@ -5,9 +5,8 @@ import { verify } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
 import redisClient from "@database/redis/client";
-import { accessSign, refreshSign, refreshVerify } from "@lib/authToken/jwt";
-import { CustomError, ResponseError } from "@wrappers/error";
-import { CustomJwt } from "@lib/authToken/jwt";
+import { accessSign, refreshSign, refreshVerify, CustomJwt } from "@lib/jwt";
+import { ResponseError } from "@wrappers/error";
 import * as userModel from "@model/user";
 
 export const router = express.Router();
@@ -41,9 +40,7 @@ router.post("/check", async (req: Request, res: Response) => {
   } catch (e) {
     console.error(e);
     if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
-    } else if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
+      res.status(e.httpStatusCode).send(e);
     } else {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
@@ -60,10 +57,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
   try {
     if (JWT_SALT === undefined) {
-      throw new CustomError({
-        name: "WrongSecureCode",
-        message: "Wrong operation JWT token secure",
-      });
+      throw new Error("Wrong operation JWT token secure");
     }
     if (refreshToken !== undefined) {
       const verifiedRefresh = await refreshVerify(refreshToken);
@@ -89,9 +83,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
   } catch (e) {
     console.log(e);
     if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
-    } else if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
+      res.status(e.httpStatusCode).send(e);
     } else {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
@@ -106,10 +98,7 @@ router.post("/renew-refresh", async (req: Request, res: Response) => {
 
   try {
     if (JWT_SALT === undefined) {
-      throw new CustomError({
-        name: "WrongSecureCode",
-        message: "Wrong operation JWT token secure",
-      });
+      throw new Error("Wrong operation JWT token secure");
     }
     if (token !== undefined) {
       const verifiedRefresh = await refreshVerify(token);
@@ -125,9 +114,7 @@ router.post("/renew-refresh", async (req: Request, res: Response) => {
   } catch (e) {
     console.log(e);
     if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
-    } else if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
+      res.status(e.httpStatusCode).send(e);
     } else {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");
@@ -144,8 +131,8 @@ router.post("/signin", async (req: Request, res: Response) => {
 
     if (existRows === 0) {
       throw new ResponseError({
-        name: "ER08",
-        httpCode: 400,
+        httpStatusCode: 400,
+        errorCode: 1002,
         message: "Invalid Email or Password",
       });
     }
@@ -155,9 +142,9 @@ router.post("/signin", async (req: Request, res: Response) => {
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
       throw new ResponseError({
-        name: "ER08",
-        httpCode: 400,
-        message: "Wrong Email or Password",
+        httpStatusCode: 400,
+        errorCode: 1002,
+        message: "Invalid Email or Password",
       });
     }
 
@@ -196,15 +183,11 @@ router.post("/signin", async (req: Request, res: Response) => {
     console.log(e);
     if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
-      res.status(500).send(error);
+      res.status(error.httpStatusCode).send(error);
     } else if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
-    } else if (e instanceof CustomError) {
-      res.status(500).send("Internal Server Error");
+      res.status(e.httpStatusCode).send(e);
     } else {
       res.status(500).send("Internal Server Error");
     }
@@ -278,16 +261,12 @@ router.post("/signup", async (req: Request, res: Response) => {
     console.log(e);
     if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
       const error = new ResponseError({
-        name: "ER00",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     }
@@ -302,8 +281,8 @@ router.post("/verify-email", async (req: Request, res: Response) => {
 
     if (result > 0) {
       throw new ResponseError({
-        name: "ER11",
-        httpCode: 400,
+        httpStatusCode: 400,
+        errorCode: 1101,
         message: "Account validation failed.",
       });
     }
@@ -313,13 +292,11 @@ router.post("/verify-email", async (req: Request, res: Response) => {
     console.log(e);
     if (e instanceof DatabaseError) {
       const error = new ResponseError({
-        name: "ER10",
-        httpCode: 500,
-        message: "Internal Server Error",
+        httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else if (e instanceof ResponseError) {
-      res.status(e.httpCode).send(e);
+      res.status(e.httpStatusCode).send(e);
     } else {
       console.log("Unhandled Error!");
       res.status(500).send("Internal Server Error");

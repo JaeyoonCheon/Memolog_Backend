@@ -32,9 +32,9 @@ router.get(
       } else {
         if (!cursor || !id) {
           throw new ResponseError({
-            name: "ER04",
-            httpCode: 400,
-            message: "wrong params",
+            httpStatusCode: 400,
+            errorCode: 1201,
+            message: "wrong query parameters",
           });
         }
         documents = await browseModel.browseQuery({
@@ -52,20 +52,16 @@ router.get(
       res.send(previewDocuments);
     } catch (e) {
       if (e instanceof ResponseError) {
-        res.status(e.httpCode).send(e);
+        res.status(e.httpStatusCode).send(e);
       } else if (e instanceof DatabaseError) {
         const error = new ResponseError({
-          name: "ER10",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       } else {
         console.log("Unhandled Error!");
         const error = new ResponseError({
-          name: "ER00",
-          httpCode: 500,
-          message: "Internal Server Error",
+          httpStatusCode: 500,
         });
         res.status(500).send(error);
       }
