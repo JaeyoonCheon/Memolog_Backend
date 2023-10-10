@@ -274,10 +274,13 @@ router.post("/signup", async (req: Request, res: Response) => {
 });
 
 router.post("/verify-email", async (req: Request, res: Response) => {
+  console.log("verify");
   try {
     const { email } = req.body;
 
     const result = await userModel.verifyEmail(email);
+
+    console.log(result);
 
     if (result > 0) {
       throw new ResponseError({
@@ -287,7 +290,7 @@ router.post("/verify-email", async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200);
+    res.status(200).send("ok");
   } catch (e) {
     console.log(e);
     if (e instanceof DatabaseError) {
