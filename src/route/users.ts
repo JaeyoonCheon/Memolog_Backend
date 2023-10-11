@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import express from "express";
 import { DatabaseError } from "pg";
 
-import * as userModel from "@model/user";
+import * as userModel from "@/repository/user";
 
 export const router = express.Router();
 

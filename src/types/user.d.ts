@@ -5,7 +5,7 @@ declare module "user" {
     password: string;
     created_at: Date;
     updated_at: Date;
-    scope: number;
+    scope: string;
     user_identifier: string;
   }
   export interface CreateUser {

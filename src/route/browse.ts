@@ -3,7 +3,7 @@ import { DatabaseError } from "pg";
 
 import pool from "@database/postgreSQL/pool";
 import { ResponseError } from "@wrappers/error";
-import * as browseModel from "@model/browse";
+import * as browseModel from "@/repository/browse";
 
 export const router = express.Router();
 

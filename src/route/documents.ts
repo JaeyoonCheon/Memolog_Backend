@@ -7,7 +7,7 @@ import {
   addDocumentHashtag,
   addHashtagLog,
 } from "@controller/documents";
-import * as documentModel from "@model/document";
+import * as documentModel from "@/repository/document";
 import { ResponseError } from "@wrappers/error";
 
 export const router = express.Router();
