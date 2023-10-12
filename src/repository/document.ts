@@ -12,6 +12,7 @@ import {
   Hashtag,
   UpdateDocument,
 } from "document";
+import { BrowseFirstQuery, BrowseQuery } from "browse";
 
 interface CreateDocumentPayload {
   title: string;
@@ -161,6 +162,41 @@ export default class DocumentRepository {
 
     const result = await pool.query<Document>(query, [
       searchKeyword,
+      userID,
+      id,
+      cursor,
+      limit,
+    ]);
+
+    return result.rows;
+  }
+
+  async browseFirstQuery(params: BrowseFirstQuery): Promise<Document[]> {
+    const { userID, limit } = params;
+
+    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_ID,
+  U.nickname, U.profile_image_url
+  FROM public.document AS D
+  LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
+  WHERE D.user_id!=$1 AND D.scope='public' 
+  ORDER BY D.created_at DESC, D.id LIMIT $2`;
+
+    const result = await pool.query<Document>(query, [userID, limit]);
+
+    return result.rows;
+  }
+
+  async browseQuery(params: BrowseQuery): Promise<Document[]> {
+    const { userID, limit, cursor, id } = params;
+
+    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_ID,
+  U.nickname, U.profile_image_url
+  FROM public.document AS D
+  LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
+  WHERE D.user_id!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
+  ORDER BY D.created_at DESC, D.id LIMIT $4`;
+
+    const result = await pool.query<Document>(query, [
       userID,
       id,
       cursor,

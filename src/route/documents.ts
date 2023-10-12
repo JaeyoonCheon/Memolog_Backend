@@ -11,14 +11,13 @@ interface documentQuery {
   sort: string;
   order: string;
 }
-
-router.get("/", documentControllerInstance.getDocumentList);
-
 interface documentSearchQuery {
   id?: number;
   cursor?: string;
   keyword: string;
 }
+
+router.get("/", documentControllerInstance.getDocumentList);
 
 router.get("/search", documentControllerInstance.searchDocumentList);
 

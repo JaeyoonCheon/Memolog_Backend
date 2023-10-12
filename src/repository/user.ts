@@ -116,7 +116,7 @@ export default class UserRepository {
 
     return result.rows[0].count;
   }
-  async deletePassword(userID: string) {
+  async deleteUser(userID: string) {
     const query = `DELETE public.user where user_identifier=$1`;
 
     const result = await pool.query(query, [userID]);
