@@ -1,55 +1,104 @@
-import pool from "@/database/postgreSQL/pool";
+import { Request, Response, NextFunction } from "express";
+import Container from "typedi";
 
-export const addHashtag = async (name: string) => {
-  const client = await pool.connect();
-  try {
-    const isExistRows = await client.query(
-      `SELECT EXISTS (SELECT * FROM public.hashtag WHERE name=$1) AS exist`,
-      [name]
-    );
-    const isExist = isExistRows.rows[0].exist;
+import DocumentService from "@/service/documents.service";
 
-    if (isExist) {
-      const hashtagId = await client.query(
-        `SELECT id FROM public.hashtag WHERE name=$1`,
-        [name]
-      );
-      return hashtagId.rows[0].id;
-    }
+export default class DocumentController {
+  private documentSvc;
 
-    const result = await client.query(
-      `INSERT INTO public.hashtag (name) VALUES ($1) RETURNING id;`,
-      [name]
-    );
-
-    return result.rows[0].id;
-  } catch (e) {
-    throw e;
-  } finally {
-    client.release();
+  constructor() {
+    this.documentSvc = Container.get(DocumentService);
   }
-};
 
-export const addHashtagLog = async (hashtagId: number, accessTime: Date) => {
-  const client = await pool.connect();
+  async getDocumentList(
+    req: Request<any, any, any, any>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { userID } = req.body.payload;
+    const { id, cursor, sort, order } = req.query;
 
-  try {
-    await client.query(
-      `INSERT INTO public.hashtag_access (hashtag_id, access_time) VALUES ($1, $2)`,
-      [hashtagId, accessTime]
+    const documentList = await this.documentSvc.readDocumentList(
+      id,
+      cursor,
+      sort,
+      order,
+      userID
     );
-  } catch (e) {
-    throw e;
-  } finally {
-    client.release();
+
+    res.status(200).send(documentList);
   }
-};
+  async getDocument(
+    req: Request<any, any, any, any>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { id } = req.params;
 
-export const addDocumentHashtag = async (docId: number, hashtagId: number) => {
-  const client = await pool.connect();
+    const document = await this.documentSvc.readDocument(id);
 
-  await client.query(
-    `INSERT INTO public.document_hashtag (doc_id, hash_id) VALUES ($1, $2)`,
-    [docId, hashtagId]
-  );
-};
+    res.status(200).send(document);
+  }
+  async searchDocumentList(
+    req: Request<any, any, any, any>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { userID } = req.body.payload;
+    const { id, cursor, keyword } = req.query;
+
+    const documentList = await this.documentSvc.searchDocumentList(
+      id,
+      cursor,
+      userID,
+      keyword
+    );
+
+    res.status(200).send(documentList);
+  }
+  async postDocument(req: Request, res: Response, next: NextFunction) {
+    const { userID } = req.body.payload;
+    const { title, form, scope, thumbnail_url, hashtags } = req.body;
+
+    await this.documentSvc.createDocument(
+      title,
+      form,
+      userID,
+      scope,
+      thumbnail_url,
+      hashtags
+    );
+
+    res.status(200).send("ok");
+  }
+  async updateDocument(
+    req: Request<any, any, any, any>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { id } = req.params;
+    const { title, form, scope, thumbnail_url, hashtags } = req.body;
+
+    await this.documentSvc.updateDocument(
+      id,
+      title,
+      form,
+      scope,
+      thumbnail_url,
+      hashtags
+    );
+
+    res.status(200).send("ok");
+  }
+  async deleteDocument(
+    req: Request<any, any, any, any>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { id } = req.params;
+
+    await this.documentSvc.deleteDocument(id);
+
+    res.status(200).send("ok");
+  }
+}

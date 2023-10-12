@@ -176,7 +176,7 @@ export default class DocumentRepository {
     const query = `UPDATE public.document SET title=$1, form=$2, updated_at=$3, scope=$4, thumbnail_url=$5 
     WHERE id=$6`;
 
-    const result = await pool.query(query, [
+    await pool.query(query, [
       title,
       form,
       updated_at,
@@ -189,12 +189,55 @@ export default class DocumentRepository {
   async deleteDocument(id: number) {
     const query = `DELETE FROM public.document WHERE id=$1`;
 
-    const result = await pool.query(query, [id]);
+    await pool.query(query, [id]);
   }
 
   async deleteDocumentHashtag(id: number) {
     const query = `DELETE FROM public.document_hashtag WHERE doc_id=$1`;
 
-    const result = await pool.query(query, [id]);
+    await pool.query(query, [id]);
+  }
+
+  async addHashtag(name: string) {
+    const client = await pool.connect();
+
+    const isExistRows = await client.query(
+      `SELECT EXISTS (SELECT * FROM public.hashtag WHERE name=$1) AS exist`,
+      [name]
+    );
+    const isExist = isExistRows.rows[0].exist;
+
+    if (isExist) {
+      const hashtagId = await client.query(
+        `SELECT id FROM public.hashtag WHERE name=$1`,
+        [name]
+      );
+      return hashtagId.rows[0].id;
+    }
+
+    const result = await client.query(
+      `INSERT INTO public.hashtag (name) VALUES ($1) RETURNING id;`,
+      [name]
+    );
+
+    return result.rows[0].id;
+  }
+
+  async addHashtagLog(hashtagId: number, accessTime: Date) {
+    const client = await pool.connect();
+
+    await client.query(
+      `INSERT INTO public.hashtag_access (hashtag_id, access_time) VALUES ($1, $2)`,
+      [hashtagId, accessTime]
+    );
+  }
+
+  async addDocumentHashtag(docId: number, hashtagId: number) {
+    const client = await pool.connect();
+
+    await client.query(
+      `INSERT INTO public.document_hashtag (doc_id, hash_id) VALUES ($1, $2)`,
+      [docId, hashtagId]
+    );
   }
 }

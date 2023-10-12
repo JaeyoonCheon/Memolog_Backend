@@ -44,7 +44,7 @@ declare module "document" {
     title: string;
     form: string;
     updated_at: Date;
-    scope: Date;
+    scope: string;
     thumbnail_url: string;
   }
 }
