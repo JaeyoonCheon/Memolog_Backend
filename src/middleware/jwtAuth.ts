@@ -11,7 +11,6 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
   const JWT_SALT = process.env.SALT;
   const accessToken = req.headers.authorization?.split("Bearer ")[1];
 
-  console.log(accessToken);
   try {
     if (JWT_SALT === undefined) {
       throw new Error("No JWT salt");
@@ -30,9 +29,7 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
       });
     }
   } catch (e) {
-    console.error(e);
     console.log(e);
-    console.dir(e);
     if (e instanceof ResponseError) {
       res.status(e.httpStatusCode).send(e);
     } else if (e instanceof TokenExpiredError) {
@@ -41,21 +38,21 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
         errorCode: 2001,
         message: e.message,
       });
-      res.status(error.httpStatusCode).send(error);
+      next(error);
     } else if (e instanceof JsonWebTokenError) {
       const error = new ResponseError({
         httpStatusCode: 401,
         errorCode: 2007,
         message: e.message,
       });
-      res.status(error.httpStatusCode).send(error);
+      next(error);
     } else {
       console.log("Unhandled Error!");
       const error = new ResponseError({
         httpStatusCode: 500,
         message: "Internal Server Error",
       });
-      res.status(500).send(error);
+      next(error);
     }
   }
 };
