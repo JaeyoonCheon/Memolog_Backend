@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { Service } from "typedi";
 import format from "pg-format";
 
-import pool from "@database/postgreSQL/pool";
+import pool from "@databases/postgreSQL/pool";
 import {
   Document,
   ReadDocumentsFirstQuery,

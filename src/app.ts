@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express from "express";
 import bodyParser from "body-parser";
 
-import { wrapAsync } from "@wrappers/error";
+import { wrapAsync } from "@errors/error";
 
 const app = express();
 
@@ -11,13 +11,13 @@ app.use(bodyParser.json());
 
 const PORT = process.env.SERVER_PORT || 3367;
 
-import { router as documentRouter } from "./route/documents";
-import { router as userRouter } from "./route/users";
-import { router as browseRouter } from "./route/browse";
-import { router as authRouter } from "./route/auth";
-import { router as statRouter } from "./route/statistics";
-import { jwtAuth } from "./middleware/jwtAuth";
-import { globalErrorHandler } from "@middleware/errorHandler";
+import { router as documentRouter } from "./routes/documents";
+import { router as userRouter } from "./routes/users";
+import { router as browseRouter } from "./routes/browse";
+import { router as authRouter } from "./routes/auth";
+import { router as statRouter } from "./routes/statistics";
+import { jwtAuth } from "@middlewares/jwtAuth";
+import { globalErrorHandler } from "@middlewares/errorHandler";
 
 app.use("/auth", wrapAsync(authRouter));
 app.use("/user", jwtAuth, wrapAsync(userRouter));

@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express, { Request, Response, NextFunction } from "express";
 import { Service, Container } from "typedi";
 
-import BrowseService from "@/service/browse.service";
+import BrowseService from "@services/browse.service";
 
 @Service()
 export default class BrowseController {

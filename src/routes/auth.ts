@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express from "express";
 import { Container } from "typedi";
 
-import AuthController from "@controller/auth.controller";
+import AuthController from "@controllers/auth.controller";
 
 export const router = express.Router();
 

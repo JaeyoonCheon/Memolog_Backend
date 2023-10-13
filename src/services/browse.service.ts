@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { Service, Container } from "typedi";
 
-import DocumentRepository from "@repository/document";
-import { ResponseError } from "@wrappers/error";
+import DocumentRepository from "@repositories/document";
+import { CustomError } from "@errors/error";
 
 @Service()
 export default class BrowseService {
@@ -26,7 +26,7 @@ export default class BrowseService {
       });
     } else {
       if (!cursor || !id) {
-        throw new ResponseError({
+        throw new CustomError({
           httpStatusCode: 400,
           errorCode: 1201,
           message: "wrong query parameters",

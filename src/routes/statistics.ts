@@ -1,8 +1,8 @@
 import express, { Request, Response } from "express";
 import { DatabaseError } from "pg";
 
-import pool from "@/database/postgreSQL/pool";
-import { ResponseError } from "@wrappers/error";
+import pool from "@databases/postgreSQL/pool";
+import { CustomError } from "@errors/error";
 
 export const router = express.Router();
 
@@ -29,15 +29,15 @@ router.get("/hashtag-trends", async (req: Request, res: Response) => {
 
     res.status(200).json(stat);
   } catch (e) {
-    if (e instanceof ResponseError) {
+    if (e instanceof CustomError) {
       res.status(e.httpStatusCode).send(e);
     } else if (e instanceof DatabaseError) {
-      const error = new ResponseError({
+      const error = new CustomError({
         httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
-      const error = new ResponseError({
+      const error = new CustomError({
         httpStatusCode: 500,
       });
       res.status(500).send(error);
@@ -74,16 +74,16 @@ router.get("/frequency", async (req: Request, res: Response) => {
 
     res.status(200).json(stat);
   } catch (e) {
-    if (e instanceof ResponseError) {
+    if (e instanceof CustomError) {
       res.status(e.httpStatusCode).send(e);
     } else if (e instanceof DatabaseError) {
-      const error = new ResponseError({
+      const error = new CustomError({
         httpStatusCode: 500,
       });
       res.status(500).send(error);
     } else {
       console.log("Unhandled Error!");
-      const error = new ResponseError({
+      const error = new CustomError({
         httpStatusCode: 500,
       });
       res.status(500).send(error);

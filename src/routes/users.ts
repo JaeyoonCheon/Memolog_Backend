@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express, { Request, Response } from "express";
 import { Container } from "typedi";
 
-import UserController from "@controller/user.controller";
+import UserController from "@controllers/user.controller";
 
 export const router = express.Router();
 const userControllerInstance = Container.get(UserController);

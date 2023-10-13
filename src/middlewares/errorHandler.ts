@@ -1,4 +1,4 @@
-import { ResponseError } from "@wrappers/error";
+import { CustomError } from "@errors/error";
 import { Request, Response, NextFunction } from "express";
 
 export function globalErrorHandler(
@@ -7,7 +7,7 @@ export function globalErrorHandler(
   res: Response,
   next: NextFunction
 ) {
-  if (err instanceof ResponseError) {
+  if (err instanceof CustomError) {
     res.status(err.httpStatusCode).send(err);
   } else {
     res.status(500).send(err);

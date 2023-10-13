@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { Request, Response, NextFunction } from "express";
 import { Container, Service } from "typedi";
 
-import AuthService from "@/service/auth.service";
+import AuthService from "@services/auth.service";
 
 @Service()
 export default class AuthController {

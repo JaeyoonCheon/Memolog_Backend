@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import express from "express";
 import { Container } from "typedi";
-import DocumentController from "@controller/documents.controller";
+import DocumentController from "@controllers/documents.controller";
 
 export const router = express.Router();
 const documentControllerInstance = Container.get(DocumentController);

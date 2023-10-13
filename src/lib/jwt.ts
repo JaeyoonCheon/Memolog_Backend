@@ -3,8 +3,8 @@ import { sign, verify, decode, Jwt, Secret } from "jsonwebtoken";
 import dotenv from "dotenv";
 import ms from "ms";
 
-import client from "../database/redis/client";
-import { ResponseError } from "../wrappers/error";
+import client from "../databases/redis/client";
+import { CustomError } from "../errors/error";
 
 export interface CustomJWTPayload {
   userID: string;
@@ -59,7 +59,7 @@ const refreshVerify = async (token: string) => {
   if (token === refreshData) {
     return verify(token, SECRET) as CustomJWTPayload;
   } else {
-    throw new ResponseError({
+    throw new CustomError({
       httpStatusCode: 401,
       errorCode: 2003,
       message: "Token data error",

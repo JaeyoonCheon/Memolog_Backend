@@ -4,9 +4,9 @@ import bcrypt from "bcrypt";
 import { verify } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
-import redisClient from "@database/redis/client";
-import UserRepository from "@repository/user";
-import { ResponseError } from "@wrappers/error";
+import redisClient from "@databases/redis/client";
+import UserRepository from "@repositories/user";
+import { CustomError } from "@errors/error";
 import { accessSign, refreshSign, refreshVerify, CustomJwt } from "@lib/jwt";
 
 @Service()
@@ -80,7 +80,7 @@ export default class AuthService {
     const existRows = await this.userModel.verifyEmail(userEmail);
 
     if (existRows === 0) {
-      throw new ResponseError({
+      throw new CustomError({
         httpStatusCode: 400,
         errorCode: 1002,
         message: "Invalid Email or Password",
@@ -91,7 +91,7 @@ export default class AuthService {
 
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
-      throw new ResponseError({
+      throw new CustomError({
         httpStatusCode: 400,
         errorCode: 1002,
         message: "Invalid Email or Password",
@@ -156,7 +156,7 @@ export default class AuthService {
     const result = await this.userModel.verifyEmail(email);
 
     if (result > 0) {
-      throw new ResponseError({
+      throw new CustomError({
         httpStatusCode: 400,
         errorCode: 1101,
         message: "Account validation failed.",

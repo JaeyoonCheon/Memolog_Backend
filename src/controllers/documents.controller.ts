@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { Request, Response, NextFunction } from "express";
 import { Container, Service } from "typedi";
 
-import DocumentService from "@/service/documents.service";
+import DocumentService from "@services/documents.service";
 
 @Service()
 export default class DocumentController {

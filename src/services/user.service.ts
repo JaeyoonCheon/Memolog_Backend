@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Service, Container } from "typedi";
 
-import UserRepository from "@repository/user";
+import UserRepository from "@repositories/user";
 
 @Service()
 export default class UserService {

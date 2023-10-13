@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express, { Request, Response, NextFunction } from "express";
 import { Service, Container } from "typedi";
 
-import UserService from "@/service/user.service";
+import UserService from "@services/user.service";
 
 @Service()
 export default class UserController {
