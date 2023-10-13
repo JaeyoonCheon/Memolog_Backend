@@ -1,20 +1,22 @@
+import "reflect-metadata";
 import { Request, Response, NextFunction } from "express";
-import Container from "typedi";
+import { Container, Service } from "typedi";
 
 import DocumentService from "@/service/documents.service";
 
+@Service()
 export default class DocumentController {
-  private documentSvc;
+  documentSvc: DocumentService;
 
   constructor() {
     this.documentSvc = Container.get(DocumentService);
   }
 
-  async getDocumentList(
+  getDocumentList = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { userID } = req.body.payload;
     const { id, cursor, sort, order } = req.query;
 
@@ -27,23 +29,23 @@ export default class DocumentController {
     );
 
     res.status(200).send(documentList);
-  }
-  async getDocument(
+  };
+  getDocument = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { id } = req.params;
 
     const document = await this.documentSvc.readDocument(id);
 
     res.status(200).send(document);
-  }
-  async searchDocumentList(
+  };
+  searchDocumentList = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { userID } = req.body.payload;
     const { id, cursor, keyword } = req.query;
 
@@ -55,8 +57,8 @@ export default class DocumentController {
     );
 
     res.status(200).send(documentList);
-  }
-  async postDocument(req: Request, res: Response, next: NextFunction) {
+  };
+  postDocument = async (req: Request, res: Response, next: NextFunction) => {
     const { userID } = req.body.payload;
     const { title, form, scope, thumbnail_url, hashtags } = req.body;
 
@@ -70,12 +72,12 @@ export default class DocumentController {
     );
 
     res.status(200).send("ok");
-  }
-  async updateDocument(
+  };
+  updateDocument = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { id } = req.params;
     const { title, form, scope, thumbnail_url, hashtags } = req.body;
 
@@ -89,16 +91,16 @@ export default class DocumentController {
     );
 
     res.status(200).send("ok");
-  }
-  async deleteDocument(
+  };
+  deleteDocument = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { id } = req.params;
 
     await this.documentSvc.deleteDocument(id);
 
     res.status(200).send("ok");
-  }
+  };
 }

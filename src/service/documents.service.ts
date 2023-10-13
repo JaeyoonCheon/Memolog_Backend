@@ -1,11 +1,12 @@
-import Container, { Service } from "typedi";
+import "reflect-metadata";
+import { Container, Service } from "typedi";
 
 import DocumentRepository from "@repository/document";
 import { ResponseError } from "@wrappers/error";
 
 @Service()
 export default class DocumentService {
-  private documentModel;
+  documentModel: DocumentRepository;
 
   constructor() {
     this.documentModel = Container.get(DocumentRepository);

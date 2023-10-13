@@ -6,17 +6,17 @@ import BrowseService from "@/service/browse.service";
 
 @Service()
 export default class BrowseController {
-  private browseSvc;
+  browseSvc: BrowseService;
 
   constructor() {
     this.browseSvc = Container.get(BrowseService);
   }
 
-  async browseDocumentList(
+  browseDocumentList = async (
     req: Request<any, any, any, any>,
     res: Response,
     next: NextFunction
-  ) {
+  ) => {
     const { userID } = req.body.payload;
     const { id, cursor } = req.query;
 
@@ -27,5 +27,5 @@ export default class BrowseController {
     );
 
     res.status(200).send(documents);
-  }
+  };
 }

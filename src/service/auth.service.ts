@@ -11,9 +11,9 @@ import { accessSign, refreshSign, refreshVerify, CustomJwt } from "@lib/jwt";
 
 @Service()
 export default class AuthService {
-  private userModel;
-  constructor() {
-    this.userModel = Container.get(UserRepository);
+  private userModel: UserRepository;
+  constructor(userModel: UserRepository) {
+    this.userModel = userModel;
   }
   async check(accessToken: string) {
     const JWT_SALT = process.env.SALT;
@@ -76,6 +76,7 @@ export default class AuthService {
     return result;
   }
   async signin(userEmail: string, userPassword: string) {
+    console.log(`signin service ${this}`);
     const existRows = await this.userModel.verifyEmail(userEmail);
 
     if (existRows === 0) {

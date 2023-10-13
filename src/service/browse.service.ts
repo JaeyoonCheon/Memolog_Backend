@@ -6,7 +6,7 @@ import { ResponseError } from "@wrappers/error";
 
 @Service()
 export default class BrowseService {
-  private documentModel;
+  documentModel: DocumentRepository;
 
   constructor() {
     this.documentModel = Container.get(DocumentRepository);

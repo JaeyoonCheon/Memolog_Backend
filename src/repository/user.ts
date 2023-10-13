@@ -1,7 +1,7 @@
-import pool from "@database/postgreSQL/pool";
 import "reflect-metadata";
 import { Service } from "typedi";
 
+import pool from "@database/postgreSQL/pool";
 import {
   CreateUser,
   ReadUser,

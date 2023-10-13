@@ -5,7 +5,7 @@ import UserRepository from "@repository/user";
 
 @Service()
 export default class UserService {
-  private userModel;
+  userModel: UserRepository;
 
   constructor() {
     this.userModel = Container.get(UserRepository);
