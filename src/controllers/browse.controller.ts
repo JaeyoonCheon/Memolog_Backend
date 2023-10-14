@@ -8,8 +8,8 @@ import BrowseService from "@services/browse.service";
 export default class BrowseController {
   browseSvc: BrowseService;
 
-  constructor() {
-    this.browseSvc = Container.get(BrowseService);
+  constructor(browseSvc: BrowseService) {
+    this.browseSvc = browseSvc;
   }
 
   browseDocumentList = async (

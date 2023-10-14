@@ -5,6 +5,7 @@ import { Container } from "typedi";
 import UserController from "@controllers/user.controller";
 
 export const router = express.Router();
+
 const userControllerInstance = Container.get(UserController);
 
 router.get("/", userControllerInstance.getUser);

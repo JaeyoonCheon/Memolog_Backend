@@ -1,6 +1,11 @@
 import { Pool } from "pg";
-import config from "./config";
+import config from "@lib/config";
+import { Service } from "typedi";
 
-const pool = new Pool(config);
-
-export default pool;
+@Service()
+export default class PG {
+  public pool;
+  constructor() {
+    this.pool = new Pool(config.PG);
+  }
+}

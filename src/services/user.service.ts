@@ -5,10 +5,10 @@ import UserRepository from "@repositories/user";
 
 @Service()
 export default class UserService {
-  userModel: UserRepository;
+  private userModel: UserRepository;
 
-  constructor() {
-    this.userModel = Container.get(UserRepository);
+  constructor(userModel: UserRepository) {
+    this.userModel = userModel;
   }
 
   async readUser(userID: string) {

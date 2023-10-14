@@ -11,15 +11,13 @@ export default class AuthController {
     this.authSvc = authSvc;
   }
   signin = async (req: Request, res: Response, next: NextFunction) => {
-    console.log("signin");
     const { email, password } = req.body;
-    console.log(this.authSvc);
 
     const signinResult = await this.authSvc.signin(email, password);
 
     res.status(200).send(signinResult);
   };
-  async signup(req: Request, res: Response, next: NextFunction) {
+  signup = async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password, scope } = req.body;
 
     const signinResult = await this.authSvc.signup(
@@ -30,7 +28,7 @@ export default class AuthController {
     );
 
     res.status(200).send(signinResult);
-  }
+  };
   checkToken = async (req: Request, res: Response, next: NextFunction) => {
     const accessToken = req.headers.authorization?.split("Bearer ")[1];
 

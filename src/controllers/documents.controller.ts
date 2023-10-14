@@ -6,10 +6,10 @@ import DocumentService from "@services/documents.service";
 
 @Service()
 export default class DocumentController {
-  documentSvc: DocumentService;
+  private documentSvc: DocumentService;
 
-  constructor() {
-    this.documentSvc = Container.get(DocumentService);
+  constructor(documentSvc: DocumentService) {
+    this.documentSvc = documentSvc;
   }
 
   getDocumentList = async (

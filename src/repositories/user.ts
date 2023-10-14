@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Service } from "typedi";
+import { Pool } from "pg";
 
 import pool from "@databases/postgreSQL/pool";
 import {
@@ -9,9 +10,14 @@ import {
   VerifyEmail,
   CreateUserPayload,
 } from "user";
+import PG from "@databases/postgreSQL/pool";
 
 @Service()
 export default class UserRepository {
+  private pool: Pool;
+  constructor(PG: PG) {
+    this.pool = PG.pool;
+  }
   async createUser(userData: CreateUserPayload): Promise<number> {
     const {
       name,
@@ -23,7 +29,7 @@ export default class UserRepository {
       user_identifier,
     } = userData;
 
-    const result = await pool.query<CreateUser>(
+    const result = await this.pool.query<CreateUser>(
       `INSERT INTO public.user 
         (name, email, password, created_at, updated_at, scope, user_identifier) 
         values ($1, $2, $3, $4, $5, $6, $7)
@@ -37,7 +43,7 @@ export default class UserRepository {
     const query = `SELECT id, name, email, profile_image_url, created_at, updated_at, nickname, user_identifier 
   FROM public.user WHERE id=$1`;
 
-    const result = await pool.query<ReadUser>(query, [id]);
+    const result = await this.pool.query<ReadUser>(query, [id]);
 
     return result.rows[0];
   }
@@ -45,7 +51,7 @@ export default class UserRepository {
     const query = `SELECT id, name, email, profile_image_url, created_at, updated_at, nickname, user_identifier 
   FROM public.user WHERE user_identifier=$1`;
 
-    const result = await pool.query<ReadUser>(query, [userID]);
+    const result = await this.pool.query<ReadUser>(query, [userID]);
 
     return result.rows[0];
   }
@@ -53,23 +59,21 @@ export default class UserRepository {
     const query = `SELECT id, name, email, profile_image_url, created_at, updated_at, nickname, user_identifier 
   FROM public.user WHERE email=$1`;
 
-    const result = await pool.query<ReadUser>(query, [email]);
+    const result = await this.pool.query<ReadUser>(query, [email]);
 
     return result.rows[0];
   }
   async readPasswordByEmail(email: string): Promise<string> {
     const query = `SELECT password FROM public.user WHERE email=$1;`;
 
-    const result = await pool.query<ReadPassword>(query, [email]);
-
-    console.log(result);
+    const result = await this.pool.query<ReadPassword>(query, [email]);
 
     return result.rows[0].password;
   }
   async readPasswordByUserID(userID: string): Promise<string> {
     const query = `SELECT password FROM public.user WHERE user_identifier=$1;`;
 
-    const result = await pool.query<ReadPassword>(query, [userID]);
+    const result = await this.pool.query<ReadPassword>(query, [userID]);
 
     return result.rows[0].password;
   }
@@ -80,7 +84,7 @@ export default class UserRepository {
   ) {
     const query = `UPDATE public.user SET nickname=$2, profile_image_url=$3 WHERE user_identifier=$1`;
 
-    const result = await pool.query(query, [
+    const result = await this.pool.query(query, [
       userID,
       nickname,
       profile_image_url,
@@ -91,35 +95,35 @@ export default class UserRepository {
   async updateNickname(userID: string, nickname: string) {
     const query = `UPDATE public.user SET nickname=$2 WHERE user_identifier=$1`;
 
-    const result = await pool.query(query, [userID, nickname]);
+    const result = await this.pool.query(query, [userID, nickname]);
 
     return result.rows[0];
   }
   async updateProfileImageURL(userID: string, profile_image_url: string) {
     const query = `UPDATE public.user SET profile_image_url=$2 WHERE user_identifier=$1`;
 
-    const result = await pool.query(query, [userID, profile_image_url]);
+    const result = await this.pool.query(query, [userID, profile_image_url]);
 
     return result.rows[0];
   }
   async updatePassword(userID: string, password: string) {
     const query = `UPDATE public.user SET password=$2 where user_identifier=$1`;
 
-    const result = await pool.query(query, [userID, password]);
+    const result = await this.pool.query(query, [userID, password]);
 
     return result.rows[0];
   }
   async verifyEmail(email: string): Promise<number> {
     const query = `SELECT COUNT(*)::int FROM public.user WHERE email=$1;`;
 
-    const result = await pool.query<VerifyEmail>(query, [email]);
+    const result = await this.pool.query<VerifyEmail>(query, [email]);
 
     return result.rows[0].count;
   }
   async deleteUser(userID: string) {
     const query = `DELETE public.user where user_identifier=$1`;
 
-    const result = await pool.query(query, [userID]);
+    const result = await this.pool.query(query, [userID]);
 
     return result.rows[0];
   }

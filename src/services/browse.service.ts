@@ -6,10 +6,10 @@ import { CustomError } from "@errors/error";
 
 @Service()
 export default class BrowseService {
-  documentModel: DocumentRepository;
+  private documentModel: DocumentRepository;
 
-  constructor() {
-    this.documentModel = Container.get(DocumentRepository);
+  constructor(documentModel: DocumentRepository) {
+    this.documentModel = documentModel;
   }
 
   async browseDocumentList(id: number, cursor: string, userID: string) {

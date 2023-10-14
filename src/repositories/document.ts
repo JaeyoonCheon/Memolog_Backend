@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { Service } from "typedi";
 import format from "pg-format";
+import { Pool } from "pg";
 
-import pool from "@databases/postgreSQL/pool";
 import {
   Document,
   ReadDocumentsFirstQuery,
@@ -13,6 +13,7 @@ import {
   UpdateDocument,
 } from "document";
 import { BrowseFirstQuery, BrowseQuery } from "browse";
+import PG from "@databases/postgreSQL/pool";
 
 interface CreateDocumentPayload {
   title: string;
@@ -30,6 +31,10 @@ interface CreateDocument {
 
 @Service()
 export default class DocumentRepository {
+  private pool: Pool;
+  constructor(PG: PG) {
+    this.pool = PG.pool;
+  }
   async createDocument(params: CreateDocumentPayload): Promise<number> {
     const {
       title,
@@ -45,7 +50,7 @@ export default class DocumentRepository {
     const query = `INSERT INTO public.document (title, form, created_at, updated_at, user_identifier, scope, thumbnail_url) 
   VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`;
 
-    const result = await pool.query<CreateDocument>(query, [
+    const result = await this.pool.query<CreateDocument>(query, [
       title,
       form,
       created_at,
@@ -61,7 +66,6 @@ export default class DocumentRepository {
   async readDocumentsFirstQuery(
     params: ReadDocumentsFirstQuery
   ): Promise<Document[]> {
-    console.log(params);
     const { userID, limit, sort, order } = params;
 
     // format for dynamic identifier
@@ -72,7 +76,7 @@ export default class DocumentRepository {
       order
     );
 
-    const result = await pool.query<Document>(query, [userID, limit]);
+    const result = await this.pool.query<Document>(query, [userID, limit]);
 
     return result.rows;
   }
@@ -91,7 +95,7 @@ export default class DocumentRepository {
       order
     );
 
-    const result = await pool.query<Document>(query, [
+    const result = await this.pool.query<Document>(query, [
       userID,
       cursor,
       id,
@@ -104,7 +108,7 @@ export default class DocumentRepository {
   async readDocument(id: number): Promise<Document> {
     const query = `SELECT * FROM public.document WHERE id=$1`;
 
-    const result = await pool.query<Document>(query, [id]);
+    const result = await this.pool.query<Document>(query, [id]);
 
     return result.rows[0];
   }
@@ -116,7 +120,7 @@ export default class DocumentRepository {
   LEFT JOIN public.hashtag H ON DH.hash_id=H.id
   WHERE D.id=$1 ORDER BY DH.doc_hash_id ASC`;
 
-    const result = await pool.query<Hashtag>(query, [id]);
+    const result = await this.pool.query<Hashtag>(query, [id]);
 
     return result.rows;
   }
@@ -124,7 +128,6 @@ export default class DocumentRepository {
   async findDocumentsFirstQuery(
     params: FindDocumentsFirstQuery
   ): Promise<Document[]> {
-    console.log(params);
     const { userID, limit, searchKeyword } = params;
 
     const query = `SELECT id, title, form, created_at FROM public.document WHERE user_identifier = $2 AND title LIKE '%'||$1||'%' 
@@ -136,7 +139,7 @@ export default class DocumentRepository {
   LEFT JOIN public.hashtag H ON DH.hash_id = H.id WHERE user_id = $2 AND H.name LIKE '%'||$1||'%'
   ORDER BY created_at DESC, id LIMIT $3`;
 
-    const result = await pool.query<Document>(query, [
+    const result = await this.pool.query<Document>(query, [
       searchKeyword,
       userID,
       limit,
@@ -160,7 +163,7 @@ export default class DocumentRepository {
     WHERE created_at < $4 OR (created_at = $4 AND id < $3)
     ORDER BY created_at DESC, id LIMIT $5`;
 
-    const result = await pool.query<Document>(query, [
+    const result = await this.pool.query<Document>(query, [
       searchKeyword,
       userID,
       id,
@@ -181,7 +184,7 @@ export default class DocumentRepository {
   WHERE D.user_id!=$1 AND D.scope='public' 
   ORDER BY D.created_at DESC, D.id LIMIT $2`;
 
-    const result = await pool.query<Document>(query, [userID, limit]);
+    const result = await this.pool.query<Document>(query, [userID, limit]);
 
     return result.rows;
   }
@@ -196,7 +199,7 @@ export default class DocumentRepository {
   WHERE D.user_id!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
   ORDER BY D.created_at DESC, D.id LIMIT $4`;
 
-    const result = await pool.query<Document>(query, [
+    const result = await this.pool.query<Document>(query, [
       userID,
       id,
       cursor,
@@ -212,7 +215,7 @@ export default class DocumentRepository {
     const query = `UPDATE public.document SET title=$1, form=$2, updated_at=$3, scope=$4, thumbnail_url=$5 
     WHERE id=$6`;
 
-    await pool.query(query, [
+    await this.pool.query(query, [
       title,
       form,
       updated_at,
@@ -225,17 +228,17 @@ export default class DocumentRepository {
   async deleteDocument(id: number) {
     const query = `DELETE FROM public.document WHERE id=$1`;
 
-    await pool.query(query, [id]);
+    await this.pool.query(query, [id]);
   }
 
   async deleteDocumentHashtag(id: number) {
     const query = `DELETE FROM public.document_hashtag WHERE doc_id=$1`;
 
-    await pool.query(query, [id]);
+    await this.pool.query(query, [id]);
   }
 
   async addHashtag(name: string) {
-    const client = await pool.connect();
+    const client = await this.pool.connect();
 
     const isExistRows = await client.query(
       `SELECT EXISTS (SELECT * FROM public.hashtag WHERE name=$1) AS exist`,
@@ -260,7 +263,7 @@ export default class DocumentRepository {
   }
 
   async addHashtagLog(hashtagId: number, accessTime: Date) {
-    const client = await pool.connect();
+    const client = await this.pool.connect();
 
     await client.query(
       `INSERT INTO public.hashtag_access (hashtag_id, access_time) VALUES ($1, $2)`,
@@ -269,7 +272,7 @@ export default class DocumentRepository {
   }
 
   async addDocumentHashtag(docId: number, hashtagId: number) {
-    const client = await pool.connect();
+    const client = await this.pool.connect();
 
     await client.query(
       `INSERT INTO public.document_hashtag (doc_id, hash_id) VALUES ($1, $2)`,

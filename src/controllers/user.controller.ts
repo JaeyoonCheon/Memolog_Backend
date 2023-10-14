@@ -8,8 +8,8 @@ import UserService from "@services/user.service";
 export default class UserController {
   userSvc: UserService;
 
-  constructor() {
-    this.userSvc = Container.get(UserService);
+  constructor(userSvc: UserService) {
+    this.userSvc = userSvc;
   }
 
   getUser = async (req: Request, res: Response, next: NextFunction) => {

@@ -50,9 +50,7 @@ const accessVerify = (token: string) => {
 };
 
 const refreshVerify = async (token: string) => {
-  console.log(token);
   const decodedTokenPayload = decode(token) as CustomJWTPayload;
-  console.log(decodedTokenPayload);
   const { userID } = decodedTokenPayload;
   const refreshData = await client.get(userID);
 
@@ -62,7 +60,7 @@ const refreshVerify = async (token: string) => {
     throw new CustomError({
       httpStatusCode: 401,
       errorCode: 2003,
-      message: "Token data error",
+      message: "Invalid Refresh Token Error",
     });
   }
 };

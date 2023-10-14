@@ -76,7 +76,6 @@ export default class AuthService {
     return result;
   }
   async signin(userEmail: string, userPassword: string) {
-    console.log(`signin service ${this}`);
     const existRows = await this.userModel.verifyEmail(userEmail);
 
     if (existRows === 0) {
