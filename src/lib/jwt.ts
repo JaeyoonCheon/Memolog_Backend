@@ -1,16 +1,12 @@
-import { promisify } from "util";
-import { sign, verify, decode, Jwt, Secret } from "jsonwebtoken";
-import dotenv from "dotenv";
+import { sign, verify, decode, Jwt, Secret, JwtPayload } from "jsonwebtoken";
 import ms from "ms";
 
 import client from "../databases/redis/client";
-import { CustomError } from "../errors/error";
+import { ResponseError } from "../errors/error";
 
-export interface CustomJWTPayload {
+export interface CustomJWTPayload extends JwtPayload {
   userID: string;
 }
-
-export type CustomJwt = Jwt & CustomJWTPayload;
 
 const SECRET: Secret = process.env.SALT || "";
 const ACCESS_EXPIRE: string = process.env.ACCESS_EXPIRE || "1h";
@@ -45,19 +41,19 @@ const refreshSign = (userID: string) => {
 };
 
 const accessVerify = (token: string) => {
-  const decodedPayload = verify(token, SECRET);
+  const decodedPayload = verify(token, SECRET) as CustomJWTPayload;
   return decodedPayload;
 };
 
 const refreshVerify = async (token: string) => {
-  const decodedTokenPayload = decode(token) as CustomJWTPayload;
+  const decodedTokenPayload = verify(token, SECRET) as CustomJWTPayload;
   const { userID } = decodedTokenPayload;
   const refreshData = await client.get(userID);
 
   if (token === refreshData) {
     return verify(token, SECRET) as CustomJWTPayload;
   } else {
-    throw new CustomError({
+    throw new ResponseError({
       httpStatusCode: 401,
       errorCode: 2003,
       message: "Invalid Refresh Token Error",

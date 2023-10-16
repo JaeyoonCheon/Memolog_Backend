@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { Service } from "typedi";
 
+import { ResponseError } from "@errors/error";
 import StatisicsRepository from "@repositories/statistics";
-import { CustomError } from "@errors/error";
 
 @Service()
 export default class StatisticsService {
@@ -14,7 +14,7 @@ export default class StatisticsService {
   async getHashtagTrends() {
     const LIMIT = process.env.DOCUMENT_LIMIT;
     if (!LIMIT) {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 500,
         message: "Invalid ENV",
       });
@@ -28,7 +28,7 @@ export default class StatisticsService {
   async getHashtagFrequency(userID: string) {
     const LIMIT = process.env.DOCUMENT_LIMIT;
     if (!LIMIT) {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 500,
         message: "Invalid ENV",
       });

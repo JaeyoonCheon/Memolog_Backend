@@ -25,7 +25,9 @@ export const wrapAsync = (fn: Function) => {
   }
 };
 
-export class CustomError {
+export class BusinessLogicError {}
+
+export class ResponseError {
   httpStatusCode: number;
   errorCode?: number;
   message?: string;

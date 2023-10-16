@@ -1,28 +1,29 @@
 import "reflect-metadata";
-import { Service, Container } from "typedi";
+import { Service } from "typedi";
 import bcrypt from "bcrypt";
-import { verify } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
+import { ResponseError } from "@errors/error";
 import redisClient from "@databases/redis/client";
 import UserRepository from "@repositories/user";
-import { CustomError } from "@errors/error";
-import { accessSign, refreshSign, refreshVerify, CustomJwt } from "@lib/jwt";
+import JwtService, { CustomJWTPayload } from "@services/jwt.service";
 
 @Service()
 export default class AuthService {
   private userModel: UserRepository;
-  constructor(userModel: UserRepository) {
+  private jwtSvc: JwtService;
+  constructor(userModel: UserRepository, jwtSvc: JwtService) {
     this.userModel = userModel;
+    this.jwtSvc = jwtSvc;
   }
   async check(accessToken: string) {
     const JWT_SALT = process.env.SALT;
     if (!accessToken || !JWT_SALT) {
       throw new Error();
     }
-    const verified = verify(accessToken, JWT_SALT) as CustomJwt;
+    const verified = this.jwtSvc.accessVerify(accessToken) as CustomJWTPayload;
     const userID = verified.userID;
-    const newAccessToken = accessSign(userID);
+    const newAccessToken = this.jwtSvc.accessSign(userID);
 
     const userRows = await this.userModel.readUserByUserID(userID);
 
@@ -40,9 +41,9 @@ export default class AuthService {
     if (!refreshToken || !JWT_SALT) {
       throw new Error();
     }
-    const verifiedRefresh = await refreshVerify(refreshToken);
+    const verifiedRefresh = await this.jwtSvc.refreshVerify(refreshToken);
     const { userID } = verifiedRefresh;
-    const newAccessToken = accessSign(userID);
+    const newAccessToken = this.jwtSvc.accessSign(userID);
 
     const userRows = await this.userModel.readUserByUserID(userID);
 
@@ -60,9 +61,9 @@ export default class AuthService {
     if (!refreshToken || !JWT_SALT) {
       throw new Error();
     }
-    const verifiedRefresh = await refreshVerify(refreshToken);
+    const verifiedRefresh = await this.jwtSvc.refreshVerify(refreshToken);
     const { userID } = verifiedRefresh;
-    const newRefreshToken = refreshSign(userID);
+    const newRefreshToken = this.jwtSvc.refreshSign(userID);
 
     const userRows = await this.userModel.readUserByUserID(userID);
 
@@ -79,7 +80,7 @@ export default class AuthService {
     const existRows = await this.userModel.verifyEmail(userEmail);
 
     if (existRows === 0) {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 400,
         errorCode: 1002,
         message: "Invalid Email or Password",
@@ -90,7 +91,7 @@ export default class AuthService {
 
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 400,
         errorCode: 1002,
         message: "Invalid Email or Password",
@@ -100,7 +101,7 @@ export default class AuthService {
     const userRows = await this.userModel.readUserByEmail(userEmail);
     const { user_identifier } = userRows;
 
-    const accessToken = accessSign(user_identifier);
+    const accessToken = this.jwtSvc.accessSign(user_identifier);
 
     const result = {
       token: {
@@ -136,8 +137,8 @@ export default class AuthService {
 
     const userRows = await this.userModel.readUserByID(newUser);
     const { user_identifier } = userRows;
-    const accessToken = accessSign(user_identifier);
-    const refreshToken = refreshSign(user_identifier);
+    const accessToken = this.jwtSvc.accessSign(user_identifier);
+    const refreshToken = this.jwtSvc.refreshSign(user_identifier);
 
     await redisClient.set(user_identifier, refreshToken);
 
@@ -155,7 +156,7 @@ export default class AuthService {
     const result = await this.userModel.verifyEmail(email);
 
     if (result > 0) {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 400,
         errorCode: 1101,
         message: "Account validation failed.",

@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { Container, Service } from "typedi";
 
+import { ResponseError } from "@errors/error";
 import DocumentRepository from "@repositories/document";
-import { CustomError } from "@errors/error";
 
 @Service()
 export default class DocumentService {
@@ -78,7 +78,7 @@ export default class DocumentService {
       });
     } else {
       if (!cursor || !id) {
-        throw new CustomError({
+        throw new ResponseError({
           httpStatusCode: 400,
           errorCode: 1201,
           message: "wrong params",
@@ -117,7 +117,7 @@ export default class DocumentService {
   ) {
     const limit = Number(process.env.DOCUMENT_LIMIT);
     if (!keyword || typeof keyword !== "string") {
-      throw new CustomError({
+      throw new ResponseError({
         httpStatusCode: 400,
         errorCode: 1202,
         message: "Wrong keyword",
@@ -139,7 +139,7 @@ export default class DocumentService {
       });
     } else {
       if (!cursor || !id) {
-        throw new CustomError({
+        throw new ResponseError({
           httpStatusCode: 400,
           errorCode: 1201,
           message: "wrong params",

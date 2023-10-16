@@ -1,8 +1,9 @@
 import "reflect-metadata";
 import { Service, Container } from "typedi";
 
+import { ResponseError } from "@errors/error";
 import DocumentRepository from "@repositories/document";
-import { CustomError } from "@errors/error";
+import JwtService from "./jwt.service";
 
 @Service()
 export default class BrowseService {
@@ -26,7 +27,7 @@ export default class BrowseService {
       });
     } else {
       if (!cursor || !id) {
-        throw new CustomError({
+        throw new ResponseError({
           httpStatusCode: 400,
           errorCode: 1201,
           message: "wrong query parameters",

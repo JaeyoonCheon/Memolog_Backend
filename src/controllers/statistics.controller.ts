@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { Service } from "typedi";
 
 import StatisticsService from "@services/statistics.service";
-import { CustomError } from "@errors/error";
+import { ResponseError } from "@errors/error";
 
 @Service()
 export default class StatisticsController {
