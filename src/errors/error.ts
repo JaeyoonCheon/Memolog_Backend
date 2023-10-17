@@ -6,6 +6,7 @@ export const wrapAsync = (fn: Function) => {
       try {
         return await fn(req, res, next);
       } catch (error) {
+        console.log(typeof error);
         return next(error);
       }
     };
@@ -16,6 +17,8 @@ export const wrapAsync = (fn: Function) => {
       res: Response,
       next: NextFunction
     ) => {
+      console.log("Promise Error Catch");
+      console.error(err);
       try {
         return await fn(err, req, res, next);
       } catch (error) {
@@ -25,7 +28,25 @@ export const wrapAsync = (fn: Function) => {
   }
 };
 
-export class BusinessLogicError {}
+export class BusinessLogicError {
+  from: string;
+  errorCode?: number;
+  message?: string;
+
+  constructor({
+    from,
+    errorCode,
+    message,
+  }: {
+    from: string;
+    errorCode?: number;
+    message?: string;
+  }) {
+    this.from = from;
+    this.errorCode = errorCode;
+    this.message = message;
+  }
+}
 
 export class ResponseError {
   httpStatusCode: number;

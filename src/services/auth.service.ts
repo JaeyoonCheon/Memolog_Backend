@@ -3,7 +3,7 @@ import { Service } from "typedi";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
-import { ResponseError } from "@errors/error";
+import { BusinessLogicError, ResponseError } from "@errors/error";
 import redisClient from "@databases/redis/client";
 import UserRepository from "@repositories/user";
 import JwtService, { CustomJWTPayload } from "@services/jwt.service";
@@ -21,7 +21,8 @@ export default class AuthService {
     if (!accessToken || !JWT_SALT) {
       throw new Error();
     }
-    const verified = this.jwtSvc.accessVerify(accessToken) as CustomJWTPayload;
+    // 만료 시간 검증 및 payload decode
+    const verified = this.jwtSvc.tokenVerify(accessToken) as CustomJWTPayload;
     const userID = verified.userID;
     const newAccessToken = this.jwtSvc.accessSign(userID);
 
@@ -41,8 +42,18 @@ export default class AuthService {
     if (!refreshToken || !JWT_SALT) {
       throw new Error();
     }
-    const verifiedRefresh = await this.jwtSvc.refreshVerify(refreshToken);
+    // 만료 시간 검증 및 payload decode
+    const verifiedRefresh = this.jwtSvc.tokenVerify(refreshToken);
     const { userID } = verifiedRefresh;
+    const savedRefreshToken = await redisClient.get(userID);
+
+    if (savedRefreshToken !== refreshToken) {
+      throw new BusinessLogicError({
+        from: "auth",
+        message: "Not same refresh token Or Refresh token expired",
+      });
+    }
+
     const newAccessToken = this.jwtSvc.accessSign(userID);
 
     const userRows = await this.userModel.readUserByUserID(userID);
@@ -61,11 +72,15 @@ export default class AuthService {
     if (!refreshToken || !JWT_SALT) {
       throw new Error();
     }
-    const verifiedRefresh = await this.jwtSvc.refreshVerify(refreshToken);
+
+    const verifiedRefresh = this.jwtSvc.tokenVerify(refreshToken);
+
     const { userID } = verifiedRefresh;
+    await redisClient.del(userID);
     const newRefreshToken = this.jwtSvc.refreshSign(userID);
 
     const userRows = await this.userModel.readUserByUserID(userID);
+    await redisClient.set(userID, newRefreshToken);
 
     const result = {
       token: {
@@ -99,6 +114,7 @@ export default class AuthService {
     }
 
     const userRows = await this.userModel.readUserByEmail(userEmail);
+    6;
     const { user_identifier } = userRows;
 
     const accessToken = this.jwtSvc.accessSign(user_identifier);

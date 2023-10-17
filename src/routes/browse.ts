@@ -3,6 +3,7 @@ import express from "express";
 import { Service, Container } from "typedi";
 
 import BrowseController from "@controllers/browse.controller";
+import { wrapAsync } from "@errors/error";
 
 export const router = express.Router();
 const browseContainerInstance = Container.get(BrowseController);
@@ -12,4 +13,4 @@ interface BrowseQuery {
   cursor?: string;
 }
 
-router.get("/", browseContainerInstance.browseDocumentList);
+router.get("/", wrapAsync(browseContainerInstance.browseDocumentList));

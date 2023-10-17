@@ -3,19 +3,23 @@ import express from "express";
 import { Container } from "typedi";
 
 import AuthController from "@controllers/auth.controller";
+import { wrapAsync } from "@errors/error";
 
 export const router = express.Router();
 
 const authControllerInstance = Container.get(AuthController);
 
-router.post("/check", authControllerInstance.checkToken);
+router.post("/check", wrapAsync(authControllerInstance.checkToken));
 
-router.post("/refresh", authControllerInstance.refreshToken);
+router.post("/refresh", wrapAsync(authControllerInstance.refreshToken));
 
-router.post("/renew-refresh", authControllerInstance.renewRefreshToken);
+router.post(
+  "/renew-refresh",
+  wrapAsync(authControllerInstance.renewRefreshToken)
+);
 
-router.post("/signin", authControllerInstance.signin);
+router.post("/signin", wrapAsync(authControllerInstance.signin));
 
-router.post("/signup", authControllerInstance.signup);
+router.post("/signup", wrapAsync(authControllerInstance.signup));
 
-router.post("/verify-email", authControllerInstance.verifyEmail);
+router.post("/verify-email", wrapAsync(authControllerInstance.verifyEmail));

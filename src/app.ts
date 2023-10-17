@@ -1,10 +1,10 @@
 import "reflect-metadata";
 import express from "express";
 import bodyParser from "body-parser";
-
-import { wrapAsync } from "@errors/error";
+import dotenv from "dotenv";
 
 const app = express();
+dotenv.config();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -19,11 +19,14 @@ import { router as statRouter } from "./routes/statistics";
 import { jwtAuth } from "@middlewares/jwtAuth";
 import { globalErrorHandler } from "@middlewares/errorHandler";
 
-app.use("/auth", wrapAsync(authRouter));
-app.use("/user", jwtAuth, wrapAsync(userRouter));
-app.use("/document", jwtAuth, wrapAsync(documentRouter));
-app.use("/browse", jwtAuth, wrapAsync(browseRouter));
-app.use("/stat", jwtAuth, wrapAsync(statRouter));
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+app.use("/auth", authRouter);
+app.use("/user", jwtAuth, userRouter);
+app.use("/document", jwtAuth, documentRouter);
+app.use("/browse", jwtAuth, browseRouter);
+app.use("/stat", jwtAuth, statRouter);
 app.use(globalErrorHandler);
 
 app.listen(PORT, () => {

@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { Container, Service } from "typedi";
 
 import AuthService from "@services/auth.service";
+import { BusinessLogicError } from "@errors/error";
 
 @Service()
 export default class AuthController {
@@ -56,13 +57,16 @@ export default class AuthController {
     res: Response,
     next: NextFunction
   ) => {
-    const refreshToken = req.headers.authorization?.split("Bearer ")[1];
+    const accessToken = req.headers.authorization?.split("Bearer ")[1];
 
-    if (!refreshToken) {
-      throw new Error();
+    if (!accessToken) {
+      throw new BusinessLogicError({
+        from: "jwt",
+        message: "no access token",
+      });
     }
 
-    const refreshResult = await this.authSvc.renewRefresh(refreshToken);
+    const refreshResult = await this.authSvc.renewRefresh(accessToken);
 
     res.status(200).send(refreshResult);
   };

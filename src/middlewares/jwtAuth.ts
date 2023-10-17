@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import dotenv from "dotenv";
-import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
+import { Container } from "typedi";
 
-import { accessVerify } from "@lib/jwt";
 import { ResponseError } from "@errors/error";
+import JwtService from "@services/jwt.service";
 
 export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
   const JWT_SALT = process.env.SALT;
@@ -20,7 +19,8 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  const payload = accessVerify(accessToken);
+  const jwtServiceInstance = Container.get(JwtService);
+  const payload = jwtServiceInstance.tokenVerify(accessToken);
 
   req.body.payload = payload;
 

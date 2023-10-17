@@ -1,7 +1,9 @@
 import "reflect-metadata";
 import express from "express";
 import { Container } from "typedi";
+
 import DocumentController from "@controllers/documents.controller";
+import { wrapAsync } from "@errors/error";
 
 export const router = express.Router();
 const documentControllerInstance = Container.get(DocumentController);
@@ -18,14 +20,14 @@ interface documentSearchQuery {
   keyword: string;
 }
 
-router.get("/", documentControllerInstance.getDocumentList);
+router.get("/", wrapAsync(documentControllerInstance.getDocumentList));
 
-router.get("/search", documentControllerInstance.searchDocumentList);
+router.get("/search", wrapAsync(documentControllerInstance.searchDocumentList));
 
-router.get("/:id", documentControllerInstance.getDocument);
+router.get("/:id", wrapAsync(documentControllerInstance.getDocument));
 
-router.post("/", documentControllerInstance.postDocument);
+router.post("/", wrapAsync(documentControllerInstance.postDocument));
 
-router.post("/:id", documentControllerInstance.updateDocument);
+router.post("/:id", wrapAsync(documentControllerInstance.updateDocument));
 
-router.delete("/:id", documentControllerInstance.deleteDocument);
+router.delete("/:id", wrapAsync(documentControllerInstance.deleteDocument));

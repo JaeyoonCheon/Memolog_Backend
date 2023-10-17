@@ -3,19 +3,26 @@ import express, { Request, Response } from "express";
 import { Container } from "typedi";
 
 import UserController from "@controllers/user.controller";
+import { wrapAsync } from "@errors/error";
 
 export const router = express.Router();
 
 const userControllerInstance = Container.get(UserController);
 
-router.get("/", userControllerInstance.getUser);
+router.get("/", wrapAsync(userControllerInstance.getUser));
 
-router.post("/profile", userControllerInstance.postUserProfile);
+router.post("/profile", wrapAsync(userControllerInstance.postUserProfile));
 
-router.post("/profileImage", userControllerInstance.postUserProfileImage);
+router.post(
+  "/profileImage",
+  wrapAsync(userControllerInstance.postUserProfileImage)
+);
 
-router.post("/nickname", userControllerInstance.postUserProfileNickname);
+router.post(
+  "/nickname",
+  wrapAsync(userControllerInstance.postUserProfileNickname)
+);
 
-router.post("/password", userControllerInstance.updateUserPassword);
+router.post("/password", wrapAsync(userControllerInstance.updateUserPassword));
 
-router.delete("/", userControllerInstance.deleteUser);
+router.delete("/", wrapAsync(userControllerInstance.deleteUser));

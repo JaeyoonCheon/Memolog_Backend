@@ -27,6 +27,7 @@ export function globalErrorHandler(
     });
     res.status(error.httpStatusCode).send(err);
   } else {
+    console.log("Unhandled Error");
     next(err);
   }
 }
