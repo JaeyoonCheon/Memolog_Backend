@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { Container, Service } from "typedi";
 
 import DocumentService from "@services/documents.service";
+import { APIResponse } from "@apis/api";
 
 @Service()
 export default class DocumentController {
@@ -27,8 +28,12 @@ export default class DocumentController {
       order,
       userID
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: documentList,
+    });
 
-    res.status(200).send(documentList);
+    res.status(response.httpStatusCode).send(response);
   };
   getDocument = async (
     req: Request<any, any, any, any>,
@@ -38,8 +43,12 @@ export default class DocumentController {
     const { id } = req.params;
 
     const document = await this.documentSvc.readDocument(id);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: document,
+    });
 
-    res.status(200).send(document);
+    res.status(response.httpStatusCode).send(response);
   };
   searchDocumentList = async (
     req: Request<any, any, any, any>,
@@ -55,8 +64,12 @@ export default class DocumentController {
       userID,
       keyword
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: documentList,
+    });
 
-    res.status(200).send(documentList);
+    res.status(response.httpStatusCode).send(response);
   };
   postDocument = async (req: Request, res: Response, next: NextFunction) => {
     const { userID } = req.body.payload;
@@ -70,8 +83,11 @@ export default class DocumentController {
       thumbnail_url,
       hashtags
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
 
-    res.status(200).send("ok");
+    res.status(response.httpStatusCode).send(response);
   };
   updateDocument = async (
     req: Request<any, any, any, any>,
@@ -89,8 +105,11 @@ export default class DocumentController {
       thumbnail_url,
       hashtags
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
 
-    res.status(200).send("ok");
+    res.status(response.httpStatusCode).send(response);
   };
   deleteDocument = async (
     req: Request<any, any, any, any>,
@@ -100,7 +119,10 @@ export default class DocumentController {
     const { id } = req.params;
 
     await this.documentSvc.deleteDocument(id);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
 
-    res.status(200).send("ok");
+    res.status(response.httpStatusCode).send(response);
   };
 }

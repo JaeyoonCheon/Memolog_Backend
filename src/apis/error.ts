@@ -17,8 +17,6 @@ export const wrapAsync = (fn: Function) => {
       res: Response,
       next: NextFunction
     ) => {
-      console.log("Promise Error Catch");
-      console.error(err);
       try {
         return await fn(err, req, res, next);
       } catch (error) {

@@ -3,7 +3,8 @@ import { Request, Response, NextFunction } from "express";
 import { Container, Service } from "typedi";
 
 import AuthService from "@services/auth.service";
-import { BusinessLogicError } from "@errors/error";
+import { APIResponse } from "@apis/api";
+import { BusinessLogicError, ResponseError } from "@apis/error";
 
 @Service()
 export default class AuthController {
@@ -15,8 +16,12 @@ export default class AuthController {
     const { email, password } = req.body;
 
     const signinResult = await this.authSvc.signin(email, password);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: signinResult,
+    });
 
-    res.status(200).send(signinResult);
+    res.status(response.httpStatusCode).send(response);
   };
   signup = async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password, scope } = req.body;
@@ -27,30 +32,50 @@ export default class AuthController {
       password,
       scope
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: signinResult,
+    });
 
-    res.status(200).send(signinResult);
+    res.status(response.httpStatusCode).send(response);
   };
   checkToken = async (req: Request, res: Response, next: NextFunction) => {
     const accessToken = req.headers.authorization?.split("Bearer ")[1];
 
     if (!accessToken) {
-      throw new Error();
+      throw new ResponseError({
+        httpStatusCode: 401,
+        errorCode: 2000,
+        message: "No access token",
+      });
     }
 
     const checkTokenResult = await this.authSvc.check(accessToken);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: checkTokenResult,
+    });
 
-    res.status(200).send(checkTokenResult);
+    res.status(response.httpStatusCode).send(response);
   };
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.headers.authorization?.split("Bearer ")[1];
 
     if (!refreshToken) {
-      throw new Error();
+      throw new ResponseError({
+        httpStatusCode: 401,
+        errorCode: 2000,
+        message: "No access token",
+      });
     }
 
     const refreshResult = await this.authSvc.refresh(refreshToken);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: refreshResult,
+    });
 
-    res.status(200).send(refreshResult);
+    res.status(response.httpStatusCode).send(response);
   };
   renewRefreshToken = async (
     req: Request,
@@ -67,14 +92,21 @@ export default class AuthController {
     }
 
     const refreshResult = await this.authSvc.renewRefresh(accessToken);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: refreshResult,
+    });
 
-    res.status(200).send(refreshResult);
+    res.status(response.httpStatusCode).send(response);
   };
   verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;
 
     await this.authSvc.verifyEmail(email);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
 
-    res.status(200).send("ok");
+    res.status(response.httpStatusCode).send(response);
   };
 }

@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Service } from "typedi";
 
-import { ResponseError } from "@errors/error";
+import { ResponseError } from "@apis/error";
 import StatisicsRepository from "@repositories/statistics";
 
 @Service()

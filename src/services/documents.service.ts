@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Container, Service } from "typedi";
 
-import { ResponseError } from "@errors/error";
+import { ResponseError } from "@apis/error";
 import DocumentRepository from "@repositories/document";
 
 @Service()

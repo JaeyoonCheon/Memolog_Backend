@@ -3,7 +3,7 @@ import express from "express";
 import { Service, Container } from "typedi";
 
 import BrowseController from "@controllers/browse.controller";
-import { wrapAsync } from "@errors/error";
+import { wrapAsync } from "@apis/error";
 
 export const router = express.Router();
 const browseContainerInstance = Container.get(BrowseController);

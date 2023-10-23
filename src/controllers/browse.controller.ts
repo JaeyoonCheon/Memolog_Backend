@@ -3,6 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { Service, Container } from "typedi";
 
 import BrowseService from "@services/browse.service";
+import { APIResponse } from "@apis/api";
 
 @Service()
 export default class BrowseController {
@@ -25,7 +26,11 @@ export default class BrowseController {
       cursor,
       userID
     );
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: documents,
+    });
 
-    res.status(200).send(documents);
+    res.status(200).send(response);
   };
 }

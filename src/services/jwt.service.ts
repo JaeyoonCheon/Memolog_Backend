@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { Service } from "typedi";
 import { sign, verify, JwtPayload, Secret } from "jsonwebtoken";
 
-import { BusinessLogicError, ResponseError } from "../errors/error";
+import { BusinessLogicError, ResponseError } from "../apis/error";
 import client from "../databases/redis/client";
 
 export interface CustomJWTPayload extends JwtPayload {

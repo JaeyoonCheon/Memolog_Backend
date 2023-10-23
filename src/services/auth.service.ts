@@ -3,7 +3,7 @@ import { Service } from "typedi";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
-import { BusinessLogicError, ResponseError } from "@errors/error";
+import { BusinessLogicError, ResponseError } from "@apis/error";
 import redisClient from "@databases/redis/client";
 import UserRepository from "@repositories/user";
 import JwtService, { CustomJWTPayload } from "@services/jwt.service";
@@ -56,16 +56,7 @@ export default class AuthService {
 
     const newAccessToken = this.jwtSvc.accessSign(userID);
 
-    const userRows = await this.userModel.readUserByUserID(userID);
-
-    const result = {
-      token: {
-        accessToken: newAccessToken,
-      },
-      user: userRows,
-    };
-
-    return result;
+    return newAccessToken;
   }
   async renewRefresh(refreshToken: string) {
     const JWT_SALT = process.env.SALT;
@@ -79,17 +70,9 @@ export default class AuthService {
     await redisClient.del(userID);
     const newRefreshToken = this.jwtSvc.refreshSign(userID);
 
-    const userRows = await this.userModel.readUserByUserID(userID);
     await redisClient.set(userID, newRefreshToken);
 
-    const result = {
-      token: {
-        refreshToken: newRefreshToken,
-      },
-      user: userRows,
-    };
-
-    return result;
+    return newRefreshToken;
   }
   async signin(userEmail: string, userPassword: string) {
     const existRows = await this.userModel.verifyEmail(userEmail);
@@ -103,7 +86,6 @@ export default class AuthService {
     }
 
     const savedPassword = await this.userModel.readPasswordByEmail(userEmail);
-
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
       throw new ResponseError({
@@ -128,6 +110,10 @@ export default class AuthService {
 
     return result;
   }
+  /* 로그인 과정 개선 예정
+    - 로그인 userSvc 불러와서 사용 변경
+    - 생성/수정 시각 userSvc에서 생성 예정
+    - 기타 로그인 정보 생성 로그인 로직에서 생성 예정 */
   async signup(name: string, email: string, password: string, scope: string) {
     const hashSaltRound = Number(process.env.HASH_SALT_ROUND);
     const hashSalt = await bcrypt.genSalt(hashSaltRound);

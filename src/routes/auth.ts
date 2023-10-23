@@ -3,7 +3,7 @@ import express from "express";
 import { Container } from "typedi";
 
 import AuthController from "@controllers/auth.controller";
-import { wrapAsync } from "@errors/error";
+import { wrapAsync } from "@apis/error";
 
 export const router = express.Router();
 

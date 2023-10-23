@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Service, Container } from "typedi";
 
-import { ResponseError } from "@errors/error";
+import { ResponseError } from "@apis/error";
 import DocumentRepository from "@repositories/document";
 import JwtService from "./jwt.service";
 

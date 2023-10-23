@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Container } from "typedi";
 
-import { ResponseError } from "@errors/error";
+import { ResponseError } from "@apis/error";
 import JwtService from "@services/jwt.service";
 
 export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {

@@ -2,6 +2,7 @@ import "reflect-metadata";
 import express, { Request, Response, NextFunction } from "express";
 import { Service, Container } from "typedi";
 
+import { APIResponse } from "@apis/api";
 import UserService from "@services/user.service";
 
 @Service()
@@ -16,13 +17,24 @@ export default class UserController {
     const { userID } = req.body.payload;
 
     const userResult = await this.userSvc.readUser(userID);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+      result: userResult,
+    });
 
-    return userResult;
+    res.status(response.httpStatusCode).send(response);
   };
 
   postUserProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { userID } = req.body.payload;
     const { nickname, profile_image_url } = req.body;
+
+    await this.userSvc.updateProfile(userID, nickname, profile_image_url);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
+
+    res.status(response.httpStatusCode).send(response);
   };
 
   postUserProfileImage = async (
@@ -32,6 +44,13 @@ export default class UserController {
   ) => {
     const { userID } = req.body.payload;
     const { profile_image_url } = req.body;
+
+    await this.userSvc.updateProfileImage(userID, profile_image_url);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
+
+    res.status(response.httpStatusCode).send(response);
   };
 
   postUserProfileNickname = async (
@@ -41,9 +60,24 @@ export default class UserController {
   ) => {
     const { userID } = req.body.payload;
     const { nickname } = req.body;
+
+    await this.userSvc.updateProfileImage(userID, nickname);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
+
+    res.status(response.httpStatusCode).send(response);
   };
 
-  async updateUserPassword(req: Request, res: Response, next: NextFunction) {}
+  async updateUserPassword(req: Request, res: Response, next: NextFunction) {
+    const { userID } = req.body.payload;
+    const { oldPassword, newPassword } = req.body;
+
+    await this.userSvc.updatePassword(userID, oldPassword, newPassword);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
+  }
 
   async deleteUser(req: Request, res: Response, next: NextFunction) {}
 }
