@@ -1,5 +1,5 @@
 declare module "user" {
-  export interface CreateUserPayload {
+  export interface CreateUserModelParams {
     name: string;
     email: string;
     password: string;
@@ -8,7 +8,13 @@ declare module "user" {
     scope: string;
     user_identifier: string;
   }
-  export interface CreateUser {
+  export interface CreateUserSvcParams {
+    name: string;
+    email: string;
+    password: string;
+    scope: string;
+  }
+  export interface CreateUserModel {
     id: number;
   }
   export interface ReadUser {

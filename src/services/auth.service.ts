@@ -5,15 +5,22 @@ import { randomUUID } from "crypto";
 
 import { BusinessLogicError, ResponseError } from "@apis/error";
 import redisClient from "@databases/redis/client";
+import UserService from "./user.service";
 import UserRepository from "@repositories/user";
 import JwtService, { CustomJWTPayload } from "@services/jwt.service";
 
 @Service()
 export default class AuthService {
   private userModel: UserRepository;
+  private userSvc: UserService;
   private jwtSvc: JwtService;
-  constructor(userModel: UserRepository, jwtSvc: JwtService) {
+  constructor(
+    userModel: UserRepository,
+    userSvc: UserService,
+    jwtSvc: JwtService
+  ) {
     this.userModel = userModel;
+    this.userSvc = userSvc;
     this.jwtSvc = jwtSvc;
   }
   async check(accessToken: string) {
@@ -115,29 +122,14 @@ export default class AuthService {
     - 생성/수정 시각 userSvc에서 생성 예정
     - 기타 로그인 정보 생성 로그인 로직에서 생성 예정 */
   async signup(name: string, email: string, password: string, scope: string) {
-    const hashSaltRound = Number(process.env.HASH_SALT_ROUND);
-    const hashSalt = await bcrypt.genSalt(hashSaltRound);
-    const encryptedPassword = await bcrypt.hash(password, hashSalt);
-
-    const localeOffset = new Date().getTimezoneOffset() * 60000;
-    const createdTime = new Date(Date.now() - localeOffset);
-    const updatedTime = createdTime;
-
-    const DEFAULT_SCOPE = "public";
-
-    const uuidForUserID = randomUUID();
-
-    const newUser = await this.userModel.createUser({
+    const newUserIndex = await this.userSvc.createUser({
       name,
       email,
-      password: encryptedPassword,
-      created_at: createdTime,
-      updated_at: updatedTime,
-      scope: scope ?? DEFAULT_SCOPE,
-      user_identifier: uuidForUserID,
+      password,
+      scope,
     });
 
-    const userRows = await this.userModel.readUserByID(newUser);
+    const userRows = await this.userModel.readUserByID(newUserIndex);
     const { user_identifier } = userRows;
     const accessToken = this.jwtSvc.accessSign(user_identifier);
     const refreshToken = this.jwtSvc.refreshSign(user_identifier);

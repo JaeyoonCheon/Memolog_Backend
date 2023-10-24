@@ -4,11 +4,11 @@ import { Pool } from "pg";
 
 import pool from "@databases/postgreSQL/pool";
 import {
-  CreateUser,
+  CreateUserModelParams,
+  CreateUserModel,
   ReadUser,
   ReadPassword,
   VerifyEmail,
-  CreateUserPayload,
 } from "user";
 import PG from "@databases/postgreSQL/pool";
 
@@ -18,7 +18,7 @@ export default class UserRepository {
   constructor(PG: PG) {
     this.pool = PG.pool;
   }
-  async createUser(userData: CreateUserPayload): Promise<number> {
+  async createUser(userData: CreateUserModelParams): Promise<number> {
     const {
       name,
       email,
@@ -29,7 +29,7 @@ export default class UserRepository {
       user_identifier,
     } = userData;
 
-    const result = await this.pool.query<CreateUser>(
+    const result = await this.pool.query<CreateUserModel>(
       `INSERT INTO public.user 
         (name, email, password, created_at, updated_at, scope, user_identifier) 
         values ($1, $2, $3, $4, $5, $6, $7)
@@ -106,10 +106,10 @@ export default class UserRepository {
 
     return result.rows[0];
   }
-  async updatePassword(userID: string, password: string) {
-    const query = `UPDATE public.user SET password=$2 where user_identifier=$1`;
+  async updatePassword(userID: string, password: string, updated_at: number) {
+    const query = `UPDATE public.user SET password=$2, updated_at=$3 where user_identifier=$1`;
 
-    const result = await this.pool.query(query, [userID, password]);
+    const result = await this.pool.query(query, [userID, password, updated_at]);
 
     return result.rows[0];
   }
