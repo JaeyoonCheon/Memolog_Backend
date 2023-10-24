@@ -69,7 +69,11 @@ export default class UserController {
     res.status(response.httpStatusCode).send(response);
   };
 
-  async updateUserPassword(req: Request, res: Response, next: NextFunction) {
+  updateUserPassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userID } = req.body.payload;
     const { oldPassword, newPassword } = req.body;
 
@@ -77,7 +81,18 @@ export default class UserController {
     const response = new APIResponse({
       httpStatusCode: 200,
     });
-  }
 
-  async deleteUser(req: Request, res: Response, next: NextFunction) {}
+    res.status(response.httpStatusCode).send(response);
+  };
+
+  deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { userID } = req.body.payload;
+
+    await this.userSvc.deleteUser(userID);
+    const response = new APIResponse({
+      httpStatusCode: 200,
+    });
+
+    res.status(response.httpStatusCode).send(response);
+  };
 }

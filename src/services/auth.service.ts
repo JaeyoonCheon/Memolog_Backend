@@ -117,10 +117,6 @@ export default class AuthService {
 
     return result;
   }
-  /* 로그인 과정 개선 예정
-    - 로그인 userSvc 불러와서 사용 변경
-    - 생성/수정 시각 userSvc에서 생성 예정
-    - 기타 로그인 정보 생성 로그인 로직에서 생성 예정 */
   async signup(name: string, email: string, password: string, scope: string) {
     const newUserIndex = await this.userSvc.createUser({
       name,
