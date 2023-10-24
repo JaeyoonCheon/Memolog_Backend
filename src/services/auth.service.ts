@@ -23,27 +23,6 @@ export default class AuthService {
     this.userSvc = userSvc;
     this.jwtSvc = jwtSvc;
   }
-  async check(accessToken: string) {
-    const JWT_SALT = process.env.SALT;
-    if (!accessToken || !JWT_SALT) {
-      throw new Error();
-    }
-    // 만료 시간 검증 및 payload decode
-    const verified = this.jwtSvc.tokenVerify(accessToken) as CustomJWTPayload;
-    const userID = verified.userID;
-    const newAccessToken = this.jwtSvc.accessSign(userID);
-
-    const userRows = await this.userModel.readUserByUserID(userID);
-
-    const result = {
-      token: {
-        accessToken: newAccessToken,
-      },
-      user: userRows,
-    };
-
-    return result;
-  }
   async refresh(refreshToken: string) {
     const JWT_SALT = process.env.SALT;
     if (!refreshToken || !JWT_SALT) {
@@ -103,7 +82,7 @@ export default class AuthService {
     }
 
     const userRows = await this.userModel.readUserByEmail(userEmail);
-    6;
+
     const { user_identifier } = userRows;
 
     const accessToken = this.jwtSvc.accessSign(user_identifier);

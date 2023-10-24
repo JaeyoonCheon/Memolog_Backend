@@ -39,25 +39,6 @@ export default class AuthController {
 
     res.status(response.httpStatusCode).send(response);
   };
-  checkToken = async (req: Request, res: Response, next: NextFunction) => {
-    const accessToken = req.headers.authorization?.split("Bearer ")[1];
-
-    if (!accessToken) {
-      throw new ResponseError({
-        httpStatusCode: 401,
-        errorCode: 2000,
-        message: "No access token",
-      });
-    }
-
-    const checkTokenResult = await this.authSvc.check(accessToken);
-    const response = new APIResponse({
-      httpStatusCode: 200,
-      result: checkTokenResult,
-    });
-
-    res.status(response.httpStatusCode).send(response);
-  };
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.headers.authorization?.split("Bearer ")[1];
 
