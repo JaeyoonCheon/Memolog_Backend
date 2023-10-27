@@ -1,13 +1,12 @@
 import "reflect-metadata";
 import { Service } from "typedi";
 import bcrypt from "bcrypt";
-import { randomUUID } from "crypto";
 
 import { BusinessLogicError } from "@apis/error";
 import redisClient from "@databases/redis/client";
 import UserService from "./user.service";
 import UserRepository from "@repositories/user";
-import JwtService, { CustomJWTPayload } from "@services/jwt.service";
+import JwtService from "@services/jwt.service";
 
 @Service()
 export default class AuthService {
@@ -77,6 +76,7 @@ export default class AuthService {
           message: "Fail to renewing JWT",
         });
       }
+      throw e;
     }
   }
   async signin(userEmail: string, userPassword: string) {
@@ -105,10 +105,12 @@ export default class AuthService {
     const { user_identifier } = userRows;
 
     const accessToken = this.jwtSvc.accessSign(user_identifier);
+    const refreshToken = await this.renewRefresh(accessToken);
 
     const result = {
       token: {
-        accessToken: accessToken,
+        accessToken,
+        refreshToken,
       },
       user: userRows,
     };

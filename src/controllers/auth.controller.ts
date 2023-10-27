@@ -42,9 +42,6 @@ export default class AuthController {
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.headers.authorization?.split("Bearer ")[1];
 
-    console.log("refreshing");
-    console.log(refreshToken);
-
     if (!refreshToken) {
       throw new BusinessLogicError({
         from: "auth.controller",
