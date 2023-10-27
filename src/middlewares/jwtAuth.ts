@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Container } from "typedi";
 
-import { ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import JwtService from "@services/jwt.service";
 
 export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -11,11 +11,11 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
   if (JWT_SALT === undefined) {
     throw new Error("No JWT salt");
   }
-  if (accessToken === undefined) {
-    throw new ResponseError({
-      httpStatusCode: 401,
+  if (!accessToken) {
+    throw new BusinessLogicError({
+      from: "jwtAuth.middleware",
       errorCode: 2000,
-      message: "No Access Token",
+      message: "No JWT Token",
     });
   }
 

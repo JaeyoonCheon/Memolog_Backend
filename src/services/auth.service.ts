@@ -3,7 +3,7 @@ import { Service } from "typedi";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
-import { BusinessLogicError, ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import redisClient from "@databases/redis/client";
 import UserService from "./user.service";
 import UserRepository from "@repositories/user";
@@ -25,18 +25,23 @@ export default class AuthService {
   }
   async refresh(refreshToken: string) {
     const JWT_SALT = process.env.SALT;
-    if (!refreshToken || !JWT_SALT) {
-      throw new Error();
+    if (!JWT_SALT) {
+      throw new BusinessLogicError({
+        from: "auth.service",
+        errorCode: 5001,
+        message: "Invalid ENV",
+      });
     }
     // 만료 시간 검증 및 payload decode
-    const verifiedRefresh = this.jwtSvc.tokenVerify(refreshToken);
+    const verifiedRefresh = this.jwtSvc.refreshVerify(refreshToken);
     const { userID } = verifiedRefresh;
     const savedRefreshToken = await redisClient.get(userID);
 
     if (savedRefreshToken !== refreshToken) {
       throw new BusinessLogicError({
-        from: "auth",
-        message: "Not same refresh token Or Refresh token expired",
+        from: "auth.service",
+        errorCode: 2003,
+        message: "Not same to stored refresh token",
       });
     }
 
@@ -44,28 +49,42 @@ export default class AuthService {
 
     return newAccessToken;
   }
-  async renewRefresh(refreshToken: string) {
+  async renewRefresh(accessToken: string) {
     const JWT_SALT = process.env.SALT;
-    if (!refreshToken || !JWT_SALT) {
-      throw new Error();
+    if (!JWT_SALT) {
+      throw new BusinessLogicError({
+        from: "auth.service",
+        errorCode: 5001,
+        message: "Invalid ENV",
+      });
     }
 
-    const verifiedRefresh = this.jwtSvc.tokenVerify(refreshToken);
+    try {
+      const verifiedRefresh = this.jwtSvc.tokenVerify(accessToken);
 
-    const { userID } = verifiedRefresh;
-    await redisClient.del(userID);
-    const newRefreshToken = this.jwtSvc.refreshSign(userID);
+      const { userID } = verifiedRefresh;
+      await redisClient.del(userID);
+      const newRefreshToken = this.jwtSvc.refreshSign(userID);
 
-    await redisClient.set(userID, newRefreshToken);
+      await redisClient.set(userID, newRefreshToken);
 
-    return newRefreshToken;
+      return newRefreshToken;
+    } catch (e) {
+      if (e instanceof BusinessLogicError && e.errorCode === 2001) {
+        throw new BusinessLogicError({
+          from: "auth.service",
+          errorCode: 2007,
+          message: "Fail to renewing JWT",
+        });
+      }
+    }
   }
   async signin(userEmail: string, userPassword: string) {
     const existRows = await this.userModel.verifyEmail(userEmail);
 
     if (existRows === 0) {
-      throw new ResponseError({
-        httpStatusCode: 400,
+      throw new BusinessLogicError({
+        from: "auth.service",
         errorCode: 1002,
         message: "Invalid Email or Password",
       });
@@ -74,8 +93,8 @@ export default class AuthService {
     const savedPassword = await this.userModel.readPasswordByEmail(userEmail);
     const compareResult = await bcrypt.compare(userPassword, savedPassword);
     if (!compareResult) {
-      throw new ResponseError({
-        httpStatusCode: 400,
+      throw new BusinessLogicError({
+        from: "auth.service",
         errorCode: 1002,
         message: "Invalid Email or Password",
       });
@@ -125,8 +144,8 @@ export default class AuthService {
     const result = await this.userModel.verifyEmail(email);
 
     if (result > 0) {
-      throw new ResponseError({
-        httpStatusCode: 400,
+      throw new BusinessLogicError({
+        from: "auth.service",
         errorCode: 1101,
         message: "Account validation failed.",
       });

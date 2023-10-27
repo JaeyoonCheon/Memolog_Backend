@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Container, Service } from "typedi";
 
-import { ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import DocumentRepository from "@repositories/document";
 
 @Service()
@@ -78,10 +78,10 @@ export default class DocumentService {
       });
     } else {
       if (!cursor || !id) {
-        throw new ResponseError({
-          httpStatusCode: 400,
+        throw new BusinessLogicError({
+          from: "document.service",
           errorCode: 1201,
-          message: "wrong params",
+          message: "wrong query params",
         });
       }
       documents = await this.documentModel.readDocumentsQuery({
@@ -117,8 +117,8 @@ export default class DocumentService {
   ) {
     const limit = Number(process.env.DOCUMENT_LIMIT);
     if (!keyword || typeof keyword !== "string") {
-      throw new ResponseError({
-        httpStatusCode: 400,
+      throw new BusinessLogicError({
+        from: "document.service",
         errorCode: 1202,
         message: "Wrong keyword",
       });
@@ -139,10 +139,10 @@ export default class DocumentService {
       });
     } else {
       if (!cursor || !id) {
-        throw new ResponseError({
-          httpStatusCode: 400,
+        throw new BusinessLogicError({
+          from: "document.service",
           errorCode: 1201,
-          message: "wrong params",
+          message: "wrong query params",
         });
       }
       documents = await this.documentModel.findDocumentsQuery({

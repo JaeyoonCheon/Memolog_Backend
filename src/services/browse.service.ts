@@ -1,9 +1,8 @@
 import "reflect-metadata";
 import { Service, Container } from "typedi";
 
-import { ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import DocumentRepository from "@repositories/document";
-import JwtService from "./jwt.service";
 
 @Service()
 export default class BrowseService {
@@ -27,8 +26,8 @@ export default class BrowseService {
       });
     } else {
       if (!cursor || !id) {
-        throw new ResponseError({
-          httpStatusCode: 400,
+        throw new BusinessLogicError({
+          from: "browse.service",
           errorCode: 1201,
           message: "wrong query parameters",
         });

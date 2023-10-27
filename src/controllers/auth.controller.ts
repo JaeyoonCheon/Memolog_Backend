@@ -4,7 +4,7 @@ import { Container, Service } from "typedi";
 
 import AuthService from "@services/auth.service";
 import { APIResponse } from "@apis/api";
-import { BusinessLogicError, ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 
 @Service()
 export default class AuthController {
@@ -42,11 +42,14 @@ export default class AuthController {
   refreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.headers.authorization?.split("Bearer ")[1];
 
+    console.log("refreshing");
+    console.log(refreshToken);
+
     if (!refreshToken) {
-      throw new ResponseError({
-        httpStatusCode: 401,
+      throw new BusinessLogicError({
+        from: "auth.controller",
         errorCode: 2000,
-        message: "No access token",
+        message: "No JWT token",
       });
     }
 
@@ -67,8 +70,9 @@ export default class AuthController {
 
     if (!accessToken) {
       throw new BusinessLogicError({
-        from: "jwt",
-        message: "no access token",
+        from: "auth.controller",
+        errorCode: 2000,
+        message: "no JWT token",
       });
     }
 

@@ -28,7 +28,7 @@ export const wrapAsync = (fn: Function) => {
 
 export class BusinessLogicError {
   from: string;
-  errorCode?: number;
+  errorCode: number;
   message?: string;
 
   constructor({
@@ -37,7 +37,7 @@ export class BusinessLogicError {
     message,
   }: {
     from: string;
-    errorCode?: number;
+    errorCode: number;
     message?: string;
   }) {
     this.from = from;
@@ -48,7 +48,7 @@ export class BusinessLogicError {
 
 export class ResponseError {
   httpStatusCode: number;
-  errorCode?: number;
+  errorCode: number;
   message?: string;
 
   constructor({
@@ -57,7 +57,7 @@ export class ResponseError {
     message,
   }: {
     httpStatusCode: number;
-    errorCode?: number;
+    errorCode: number;
     message?: string;
   }) {
     this.httpStatusCode = httpStatusCode;

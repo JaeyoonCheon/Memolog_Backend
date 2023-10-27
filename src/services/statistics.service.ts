@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Service } from "typedi";
 
-import { ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import StatisicsRepository from "@repositories/statistics";
 
 @Service()
@@ -14,8 +14,9 @@ export default class StatisticsService {
   async getHashtagTrends() {
     const LIMIT = process.env.DOCUMENT_LIMIT;
     if (!LIMIT) {
-      throw new ResponseError({
-        httpStatusCode: 500,
+      throw new BusinessLogicError({
+        from: "statistics.service",
+        errorCode: 5001,
         message: "Invalid ENV",
       });
     }
@@ -28,8 +29,9 @@ export default class StatisticsService {
   async getHashtagFrequency(userID: string) {
     const LIMIT = process.env.DOCUMENT_LIMIT;
     if (!LIMIT) {
-      throw new ResponseError({
-        httpStatusCode: 500,
+      throw new BusinessLogicError({
+        from: "statistics.service",
+        errorCode: 5001,
         message: "Invalid ENV",
       });
     }

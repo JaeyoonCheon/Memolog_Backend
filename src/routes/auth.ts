@@ -9,8 +9,6 @@ export const router = express.Router();
 
 const authControllerInstance = Container.get(AuthController);
 
-router.post("/check", wrapAsync(authControllerInstance.checkToken));
-
 router.post("/refresh", wrapAsync(authControllerInstance.refreshToken));
 
 router.post(

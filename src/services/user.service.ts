@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { Service, Container } from "typedi";
 
 import UserRepository from "@repositories/user";
-import { ResponseError } from "@apis/error";
+import { BusinessLogicError } from "@apis/error";
 import { CreateUserSvcParams } from "user";
 
 @Service()
@@ -65,8 +65,8 @@ export default class UserService {
     const savedPassword = await this.userModel.readPasswordByUserID(userID);
     const compareResult = await bcrypt.compare(oldPassword, savedPassword);
     if (!compareResult) {
-      throw new ResponseError({
-        httpStatusCode: 400,
+      throw new BusinessLogicError({
+        from: "user.service",
         errorCode: 1002,
         message: "Invalid Email or Password",
       });

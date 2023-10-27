@@ -4,7 +4,6 @@ import { Service } from "typedi";
 
 import StatisticsService from "@services/statistics.service";
 import { APIResponse } from "@apis/api";
-import { ResponseError } from "@apis/error";
 
 @Service()
 export default class StatisticsController {
