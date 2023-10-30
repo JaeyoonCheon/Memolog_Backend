@@ -129,9 +129,9 @@ export default class DocumentService {
 
     let documents = null;
 
-    const isFirstQuery = !!id;
+    const isFirstQuery = !!cursor;
 
-    if (isFirstQuery) {
+    if (!isFirstQuery) {
       documents = await this.documentModel.findDocumentsFirstQuery({
         limit,
         searchKeyword,

@@ -177,11 +177,11 @@ export default class DocumentRepository {
   async browseFirstQuery(params: BrowseFirstQuery): Promise<Document[]> {
     const { userID, limit } = params;
 
-    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_ID,
+    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_IDENTIFIER,
   U.nickname, U.profile_image_url
   FROM public.document AS D
-  LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
-  WHERE D.user_id!=$1 AND D.scope='public' 
+  LEFT JOIN public.USER AS U ON D.USER_IDENTIFIER = U.USER_IDENTIFIER
+  WHERE D.USER_IDENTIFIER!=$1 AND D.scope='public' 
   ORDER BY D.created_at DESC, D.id LIMIT $2`;
 
     const result = await this.pool.query<Document>(query, [userID, limit]);
@@ -192,11 +192,11 @@ export default class DocumentRepository {
   async browseQuery(params: BrowseQuery): Promise<Document[]> {
     const { userID, limit, cursor, id } = params;
 
-    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_ID,
+    const query = `SELECT D.ID, D.TITLE, D.FORM, D.CREATED_AT, D.UPDATED_AT, D.SCOPE, D.THUMBNAIL_URL, D.USER_IDENTIFIER,
   U.nickname, U.profile_image_url
   FROM public.document AS D
-  LEFT JOIN public.USER AS U ON D.USER_ID = U.ID
-  WHERE D.user_id!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
+  LEFT JOIN public.USER AS U ON D.USER_IDENTIFIER = U.USER_IDENTIFIER
+  WHERE D.USER_IDENTIFIER!=$1 AND D.scope='public' AND D.created_at < $2 OR (D.created_at = $2 AND D.id > $3) 
   ORDER BY D.created_at DESC, D.id LIMIT $4`;
 
     const result = await this.pool.query<Document>(query, [

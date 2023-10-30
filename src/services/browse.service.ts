@@ -15,11 +15,15 @@ export default class BrowseService {
   async browseDocumentList(id: number, cursor: string, userID: string) {
     const limit = Number(process.env.DOCUMENT_LIMIT);
 
-    const isFirstPage = !!id;
+    console.log(id);
+    console.log(cursor);
+
+    const isFirstPage = !!cursor;
+    console.log(isFirstPage);
 
     let documents = null;
 
-    if (isFirstPage) {
+    if (!isFirstPage) {
       documents = await this.documentModel.browseFirstQuery({
         userID,
         limit,
