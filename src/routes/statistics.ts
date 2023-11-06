@@ -10,7 +10,7 @@ export const router = express.Router();
 const statisticsControllerInstance = Container.get(StatisticsController);
 
 router.get(
-  "/hashtag-trends",
+  "/tag-trends",
   wrapAsync(statisticsControllerInstance.getHashtagTrends)
 );
 

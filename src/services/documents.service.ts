@@ -66,10 +66,10 @@ export default class DocumentService {
       return;
     }
 
-    const isFirstPage = !id;
+    const isFirstPage = !!cursor;
     let documents = null;
 
-    if (isFirstPage) {
+    if (!isFirstPage) {
       documents = await this.documentModel.readDocumentsFirstQuery({
         userID,
         limit,
