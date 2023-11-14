@@ -29,9 +29,14 @@ export default class UserController {
     const { userID } = req.body.payload;
     const { nickname, profile_image_url } = req.body;
 
-    await this.userSvc.updateProfile(userID, nickname, profile_image_url);
+    const updatedUserResult = await this.userSvc.updateProfile(
+      userID,
+      nickname,
+      profile_image_url
+    );
     const response = new APIResponse({
       httpStatusCode: 200,
+      result: updatedUserResult,
     });
 
     res.status(response.httpStatusCode).send(response);

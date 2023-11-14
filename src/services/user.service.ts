@@ -50,6 +50,10 @@ export default class UserService {
     profile_image_url: string
   ) {
     await this.userModel.updateProfile(userID, nickname, profile_image_url);
+
+    const updatedUserResult = await this.userModel.readUserByUserID(userID);
+
+    return updatedUserResult;
   }
   async updateProfileImage(userID: string, profile_image_url: string) {
     await this.userModel.updateProfileImageURL(userID, profile_image_url);
